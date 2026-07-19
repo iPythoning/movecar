@@ -3,9 +3,8 @@ main = "src/index.ts"
 compatibility_date = "2026-04-01"
 compatibility_flags = ["nodejs_compat"]
 
-# Production routes — scan short-link domain + api subpaths on SaaS domain
-# Both domains need to be zones in Cloudflare before `wrangler deploy`
-# [[routes]] here is filled in the env sections below to avoid routing during `wrangler dev`
+# Production custom domains — the Worker is the origin for these hostnames.
+# Cloudflare provisions the DNS records and certificates during deployment.
 
 [vars]
 ENVIRONMENT = "dev"
@@ -22,7 +21,7 @@ id = "6408fd8431b447d996ef8280b8944625"
 [env.staging]
 name = "movecar-worker-staging"
 routes = [
-  { pattern = "t-staging.autoglobalai.com/*", zone_name = "autoglobalai.com" },
+  { pattern = "t-staging.autoglobalai.com", custom_domain = true },
 ]
 
 [env.staging.vars]
@@ -39,7 +38,7 @@ id = "337019c18a8945f3acd69251e92d5604"
 [env.production]
 name = "movecar-worker"
 routes = [
-  { pattern = "t.autoglobalai.com/*", zone_name = "autoglobalai.com" },
+  { pattern = "t.autoglobalai.com", custom_domain = true },
 ]
 
 [env.production.vars]
