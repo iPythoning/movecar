@@ -43,7 +43,7 @@ routes = [
 
 [env.production.vars]
 ENVIRONMENT = "production"
-SAAS_API_URL = "https://movecar.autoglobalai.com"
+SAAS_API_URL = "https://movecar-saas.vercel.app"
 
 [[env.production.kv_namespaces]]
 binding = "MOVECAR_KV"
