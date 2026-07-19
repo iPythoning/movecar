@@ -1,0 +1,118 @@
+{
+  "Hero": {
+    "badge": {
+      "label": "NEW",
+      "text": "保护隐私的智能挪车码",
+      "href": "#pricing"
+    },
+    "title": "再也不用在车窗上留电话号码了",
+    "description": "MoveCar 为您的爱车提供专属智能二维码。任何人扫码即可通过原生推送实时通知您挪车。保护您的隐私，杜绝骚扰电话。",
+    "getStarted": "获取专属挪车码",
+    "getStartedLink": "#pricing",
+    "viewDocs": "工作原理",
+    "viewDocsLink": "#how-it-works"
+  },
+  "Features": {
+    "badge": {
+      "label": "核心优势",
+      "text": "智能挪车提醒"
+    },
+    "title": "为什么选择 MoveCar？",
+    "description": "现代、隐私优先的解决方案，替代在仪表盘上留电话号码的传统方式。",
+    "items": [
+      {
+        "title": "100% 隐私保护",
+        "description": "再也不用把私人电话号码写在纸上了。您的号码对陌生人完全隐藏。",
+        "details": [],
+        "images": []
+      },
+      {
+        "title": "路人免下载 App",
+        "description": "任何有智能手机的人都可以扫描您的二维码。它会直接在浏览器中打开——无需下载任何 App。",
+        "details": [],
+        "images": []
+      },
+      {
+        "title": "即时原生推送",
+        "description": "当有人需要您挪车时，您的手机会通过 Bark、FCM、Telegram 或邮件立即收到高优先级推送通知。",
+        "details": [],
+        "images": []
+      },
+      {
+        "title": "附带精准定位",
+        "description": "扫码者的精确位置会自动附加在通知中，让您准确知道车在哪里。",
+        "details": [],
+        "images": []
+      }
+    ]
+  },
+  "UseCases": {
+    "badge": {
+      "label": "使用流程",
+      "text": "简单的三步"
+    },
+    "title": "扫码即走般简单",
+    "description": "不到 2 分钟即可完成设置，享受终身隐私保护。",
+    "cases": [
+      {
+        "title": "1. 获取您的专属二维码",
+        "description": "注册并下载您独一无二的、设计精美的 PDF 格式二维码。",
+        "image": "/placeholder.webp",
+        "icon": "CreditCard"
+      },
+      {
+        "title": "2. 打印并放置",
+        "description": "将其打印出来放在仪表盘上，或者订购我们的优质实体贴纸。",
+        "image": "/placeholder.webp",
+        "icon": "FileText"
+      },
+      {
+        "title": "3. 保持安全",
+        "description": "在控制台里连接您偏好的推送渠道（Bark、FCM、Telegram 或邮件），每当有人扫描二维码时都能收到即时警报。",
+        "image": "/placeholder.webp",
+        "icon": "Bot"
+      }
+    ]
+  },
+  "Testimonials": {
+    "badge": {
+      "label": "用户评价"
+    },
+    "title": "全球车主信赖",
+    "description": "加入成千上万夺回隐私控制权的车主行列。"
+  },
+  "FAQ": {
+    "title": "常见问题",
+    "description": "关于 MoveCar 您需要了解的一切。",
+    "items": [
+      {
+        "question": "扫描我车的人需要下载 App 吗？",
+        "answer": "不需要！这是我们最大的优势。他们只需用普通的相机应用扫描二维码，就会打开一个快速、安全的网页，在上面可以立即通知您。"
+      },
+      {
+        "question": "我将如何收到通知？",
+        "answer": "作为车主，您在控制台连接一个或多个推送渠道：Bark、FCM（安卓/网页）、Telegram 或邮件。您会立即在手机上收到高优先级推送通知。"
+      },
+      {
+        "question": "真的是一次性付费吗？",
+        "answer": "是的！如果您选择终身计划（$29），您将永远不会再被收费。您可以终身使用无限个二维码和无限次推送通知。"
+      },
+      {
+        "question": "我可以给多辆车使用吗？",
+        "answer": "免费版涵盖 1 辆车，专业版月付/年付最多 10 辆车，终身买断版一个账户下二维码数量不限。"
+      }
+    ]
+  },
+  "CTA": {
+    "title": "今天就开始保护您的隐私",
+    "description": "现在开始使用 MoveCar：Pro 月付 $4.9、年付 $49，或 $29 终身买断。",
+    "button": "立即开始",
+    "trustText": "一次付费，终身安心。",
+    "features": {
+      "deploy": "🔒 100% 保护隐私",
+      "production": "⚡ 即时提醒",
+      "updates": "📱 路人免下载 App",
+      "i18n": "🌍 全球可用"
+    }
+  }
+}

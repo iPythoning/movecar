@@ -1,0 +1,90 @@
+{
+  "Overview": {
+    "title": "MoveCar Dashboard",
+    "subtitle": "Manage your parking tags, push channels, and scan history.",
+    "Cards": {
+      "plan": "Current Plan",
+      "tagsUsed": "Tags",
+      "notificationsMonth": "Notifications / month",
+      "channels": "Active channels"
+    },
+    "Cta": {
+      "createTag": "Create a parking tag",
+      "addChannel": "Add a push channel",
+      "upgrade": "Upgrade plan"
+    }
+  },
+  "Tags": {
+    "title": "Parking Tags",
+    "subtitle": "Each tag has its own QR code. Print and stick on your car.",
+    "new": "New tag",
+    "empty": "No tags yet. Create your first one.",
+    "Form": {
+      "plateNumber": "Plate number (optional)",
+      "plateNumberPlaceholder": "e.g. ABC-1234",
+      "vehicleModel": "Vehicle model (optional)",
+      "vehicleModelPlaceholder": "e.g. Tesla Model Y",
+      "template": "Tag template",
+      "delaySeconds": "Delay seconds (when location is denied)",
+      "save": "Save",
+      "cancel": "Cancel",
+      "deleteConfirm": "Delete this tag? Existing printed QRs will stop working."
+    },
+    "Table": {
+      "plateNumber": "Plate",
+      "shortCode": "Short code",
+      "status": "Status",
+      "createdAt": "Created",
+      "actions": "Actions",
+      "active": "Active",
+      "disabled": "Disabled"
+    },
+    "Actions": {
+      "edit": "Edit",
+      "delete": "Delete",
+      "toggle": "Toggle active",
+      "downloadPdf": "Download PDF",
+      "copyLink": "Copy scan link"
+    }
+  },
+  "Notifications": {
+    "title": "Push Channels",
+    "subtitle": "Choose how MoveCar reaches you when someone scans your tag.",
+    "Channels": {
+      "bark": {
+        "name": "Bark (iOS)",
+        "description": "iOS native push. Paste your Bark device URL."
+      },
+      "fcm": {
+        "name": "Web Push (FCM)",
+        "description": "Desktop Chrome, Android Chrome, and other FCM-compatible browsers."
+      },
+      "telegram": {
+        "name": "Telegram",
+        "description": "Best for overseas users. Open the deep link and tap Start.",
+        "bind": "Bind via Telegram",
+        "scanQr": "or scan this QR in Telegram",
+        "expiresIn": "Expires in {minutes} minutes"
+      },
+      "email": {
+        "name": "Email",
+        "description": "Fallback channel. Delivered to your account email."
+      }
+    },
+    "addToken": "Add token",
+    "test": "Send test",
+    "delete": "Remove"
+  },
+  "History": {
+    "title": "Scan History",
+    "subtitle": "Your recent notifications and their delivery state.",
+    "empty": "No scans yet.",
+    "Table": {
+      "time": "Time",
+      "tag": "Tag",
+      "message": "Message",
+      "status": "Status",
+      "channels": "Channels"
+    }
+  }
+}

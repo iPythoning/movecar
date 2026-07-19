@@ -1,0 +1,118 @@
+{
+  "Hero": {
+    "badge": {
+      "label": "NEW",
+      "text": "Privacy-First Smart Parking QR",
+      "href": "#pricing"
+    },
+    "title": "Never Expose Your Phone Number When Parking Again",
+    "description": "MoveCar provides a smart QR code for your dashboard. Anyone can scan it to notify you instantly via native push alerts. Protect your privacy and stop random calls.",
+    "getStarted": "Get Your QR Code",
+    "getStartedLink": "#pricing",
+    "viewDocs": "How it Works",
+    "viewDocsLink": "#how-it-works"
+  },
+  "Features": {
+    "badge": {
+      "label": "FEATURES",
+      "text": "Smart Parking Alerts"
+    },
+    "title": "Why Choose MoveCar?",
+    "description": "The modern, privacy-first alternative to leaving your phone number on the dashboard.",
+    "items": [
+      {
+        "title": "100% Privacy Protection",
+        "description": "Never write your personal phone number on a piece of paper again. Your number remains completely hidden from strangers.",
+        "details": [],
+        "images": []
+      },
+      {
+        "title": "No App Required for Scanners",
+        "description": "Anyone with a smartphone can scan your QR code. It opens directly in their browser—no app download required.",
+        "details": [],
+        "images": []
+      },
+      {
+        "title": "Instant Native Alerts",
+        "description": "Receive immediate push notifications on your phone via Bark, FCM, Telegram, or Email when someone needs you to move your car.",
+        "details": [],
+        "images": []
+      },
+      {
+        "title": "Location Tracking",
+        "description": "The scanner's precise location is automatically attached to the alert, so you know exactly where to go.",
+        "details": [],
+        "images": []
+      }
+    ]
+  },
+  "UseCases": {
+    "badge": {
+      "label": "HOW IT WORKS",
+      "text": "Simple 3-Step Process"
+    },
+    "title": "As Simple As Scan & Go",
+    "description": "Get set up in less than 2 minutes and enjoy lifetime privacy.",
+    "cases": [
+      {
+        "title": "1. Get Your QR Code",
+        "description": "Sign up and download your unique, beautifully designed QR code in PDF format.",
+        "image": "/placeholder.webp",
+        "icon": "CreditCard"
+      },
+      {
+        "title": "2. Print & Place",
+        "description": "Print it out and place it on your dashboard, or order our premium physical sticker.",
+        "image": "/placeholder.webp",
+        "icon": "FileText"
+      },
+      {
+        "title": "3. Stay Protected",
+        "description": "Connect your preferred push channel (Bark, FCM, Telegram, or Email) to receive instant alerts whenever someone scans your code.",
+        "image": "/placeholder.webp",
+        "icon": "Bot"
+      }
+    ]
+  },
+  "Testimonials": {
+    "badge": {
+      "label": "TESTIMONIALS"
+    },
+    "title": "Trusted by Drivers Worldwide",
+    "description": "Join thousands of drivers who have taken back their privacy."
+  },
+  "FAQ": {
+    "title": "Frequently Asked Questions",
+    "description": "Everything you need to know about MoveCar.",
+    "items": [
+      {
+        "question": "Does the person scanning my car need to download an app?",
+        "answer": "No! This is our biggest advantage. They simply scan the QR code with their regular camera app, and it opens a fast, secure web page where they can notify you instantly."
+      },
+      {
+        "question": "How will I receive the notification?",
+        "answer": "As the car owner, you connect one or more push channels in your dashboard: Bark, FCM (Android/Web), Telegram, or Email. You will receive a high-priority push notification immediately."
+      },
+      {
+        "question": "Is it really a one-time payment?",
+        "answer": "Yes! If you choose the Lifetime plan ($29), you will never be charged again. You get lifetime access to unlimited QR codes and unlimited push notifications."
+      },
+      {
+        "question": "Can I use it for multiple cars?",
+        "answer": "Free plan covers 1 vehicle. Pro Monthly/Yearly covers up to 10 vehicles. Lifetime plan gives you unlimited QR codes under one account."
+      }
+    ]
+  },
+  "CTA": {
+    "title": "Protect Your Privacy Today",
+    "description": "Start with MoveCar today: Pro is $4.9/month, $49/year, or $29 for Lifetime.",
+    "button": "Get Started Now",
+    "trustText": "One-time payment. Lifetime peace of mind.",
+    "features": {
+      "deploy": "🔒 100% Private",
+      "production": "⚡ Instant Alerts",
+      "updates": "📱 No App for Scanners",
+      "i18n": "🌍 Works Worldwide"
+    }
+  }
+}

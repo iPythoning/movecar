@@ -1,0 +1,90 @@
+{
+  "Overview": {
+    "title": "MoveCar ダッシュボード",
+    "subtitle": "駐車タグ、通知チャネル、スキャン履歴を管理します。",
+    "Cards": {
+      "plan": "現在のプラン",
+      "tagsUsed": "駐車タグ",
+      "notificationsMonth": "今月の通知",
+      "channels": "有効なチャネル"
+    },
+    "Cta": {
+      "createTag": "駐車タグを作成",
+      "addChannel": "通知チャネルを追加",
+      "upgrade": "プランをアップグレード"
+    }
+  },
+  "Tags": {
+    "title": "駐車タグ",
+    "subtitle": "各タグに固有の QR コードが付きます。印刷して車に貼ってください。",
+    "new": "新しいタグ",
+    "empty": "まだタグがありません。最初の 1 つを作成しましょう。",
+    "Form": {
+      "plateNumber": "ナンバープレート（任意）",
+      "plateNumberPlaceholder": "例: ABC-1234",
+      "vehicleModel": "車種（任意）",
+      "vehicleModelPlaceholder": "例: Tesla Model Y",
+      "template": "タグテンプレート",
+      "delaySeconds": "遅延秒数（位置情報が拒否された場合）",
+      "save": "保存",
+      "cancel": "キャンセル",
+      "deleteConfirm": "このタグを削除しますか？印刷済みの QR は無効になります。"
+    },
+    "Table": {
+      "plateNumber": "ナンバー",
+      "shortCode": "短縮コード",
+      "status": "状態",
+      "createdAt": "作成日",
+      "actions": "操作",
+      "active": "有効",
+      "disabled": "無効"
+    },
+    "Actions": {
+      "edit": "編集",
+      "delete": "削除",
+      "toggle": "有効/無効",
+      "downloadPdf": "PDF をダウンロード",
+      "copyLink": "スキャンリンクをコピー"
+    }
+  },
+  "Notifications": {
+    "title": "通知チャネル",
+    "subtitle": "スキャン時に MoveCar がどのように通知するかを選びます。",
+    "Channels": {
+      "bark": {
+        "name": "Bark (iOS)",
+        "description": "iOS ネイティブプッシュ。Bark デバイス URL を貼り付けてください。"
+      },
+      "fcm": {
+        "name": "Web Push (FCM)",
+        "description": "デスクトップ Chrome、Android Chrome、その他 FCM 対応ブラウザ。"
+      },
+      "telegram": {
+        "name": "Telegram",
+        "description": "海外ユーザー向け。リンクを開き Start をタップして紐付け。",
+        "bind": "Telegram で紐付け",
+        "scanQr": "または Telegram でこの QR をスキャン",
+        "expiresIn": "{minutes} 分後に期限切れ"
+      },
+      "email": {
+        "name": "メール",
+        "description": "フォールバック。アカウントのメールアドレスに送信。"
+      }
+    },
+    "addToken": "追加",
+    "test": "テスト送信",
+    "delete": "削除"
+  },
+  "History": {
+    "title": "スキャン履歴",
+    "subtitle": "最近の通知と配信状況。",
+    "empty": "スキャン履歴はありません。",
+    "Table": {
+      "time": "時刻",
+      "tag": "タグ",
+      "message": "メッセージ",
+      "status": "状態",
+      "channels": "配信チャネル"
+    }
+  }
+}

@@ -18,6 +18,14 @@ build/
 # Cloudflare Wrangler
 .wrangler/
 
+# Local deployment/IDE metadata
+.vercel/
+.trae/
+
+# npm is the repository package manager
+**/pnpm-lock.yaml
+**/pnpm-workspace.yaml
+
 # IDE
 .vscode/
 .idea/

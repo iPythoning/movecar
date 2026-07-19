@@ -1,0 +1,5 @@
+# Local dev secrets — copy to .dev.vars (gitignored) for `wrangler dev`
+WORKER_SECRET=dev-shared-secret-replace-before-prod
+TELEGRAM_MOVECAR_BOT_TOKEN=
+FCM_SERVER_KEY=
+BARK_DEFAULT_URL=

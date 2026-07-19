@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 192 192" width="192" height="192">
+  <defs>
+    <linearGradient id="mcGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#2563EB"/>
+      <stop offset="100%" stop-color="#1D4ED8"/>
+    </linearGradient>
+  </defs>
+  <rect width="192" height="192" rx="40" ry="40" fill="url(#mcGrad)"/>
+  <g fill="#FFFFFF">
+    <!-- Letter M left leg -->
+    <path d="M46 136 L46 72 L66 72 L82 100 L98 72 L118 72 L118 136 L102 136 L102 94 L86 120 L78 120 L62 94 L62 136 Z"/>
+    <!-- Car roof / side silhouette under the M -->
+    <path d="M126 136 L126 124 C126 117 130 112 136 112 L146 112 C152 112 156 117 156 124 L156 136 L142 136 L142 128 C142 126 141 125 139 125 C137 125 136 126 136 128 L136 136 Z"/>
+    <!-- Wheels -->
+    <circle cx="70" cy="148" r="8" fill="#FFFFFF"/>
+    <circle cx="122" cy="148" r="8" fill="#FFFFFF"/>
+  </g>
+</svg>

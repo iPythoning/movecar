@@ -1,0 +1,90 @@
+{
+  "Overview": {
+    "title": "MoveCar 控制台",
+    "subtitle": "管理你的挪车码、推送渠道和扫码历史。",
+    "Cards": {
+      "plan": "当前套餐",
+      "tagsUsed": "挪车码",
+      "notificationsMonth": "本月通知",
+      "channels": "启用渠道"
+    },
+    "Cta": {
+      "createTag": "创建挪车码",
+      "addChannel": "添加推送渠道",
+      "upgrade": "升级套餐"
+    }
+  },
+  "Tags": {
+    "title": "挪车码",
+    "subtitle": "每个挪车码都有独立二维码，打印后贴在车上即可。",
+    "new": "新建挪车码",
+    "empty": "还没有挪车码，创建第一个吧。",
+    "Form": {
+      "plateNumber": "车牌号（可选）",
+      "plateNumberPlaceholder": "如 京A12345",
+      "vehicleModel": "车型（可选）",
+      "vehicleModelPlaceholder": "如 特斯拉 Model Y",
+      "template": "二维码样式",
+      "delaySeconds": "延迟秒数（请求者未授权位置时）",
+      "save": "保存",
+      "cancel": "取消",
+      "deleteConfirm": "删除该挪车码？已打印贴车上的二维码将失效。"
+    },
+    "Table": {
+      "plateNumber": "车牌",
+      "shortCode": "短码",
+      "status": "状态",
+      "createdAt": "创建时间",
+      "actions": "操作",
+      "active": "启用",
+      "disabled": "禁用"
+    },
+    "Actions": {
+      "edit": "编辑",
+      "delete": "删除",
+      "toggle": "启停",
+      "downloadPdf": "下载 PDF",
+      "copyLink": "复制扫码链接"
+    }
+  },
+  "Notifications": {
+    "title": "推送渠道",
+    "subtitle": "选择扫码时 MoveCar 通过哪些方式通知你。",
+    "Channels": {
+      "bark": {
+        "name": "Bark (iOS)",
+        "description": "iOS 原生推送。粘贴你的 Bark 设备 URL。"
+      },
+      "fcm": {
+        "name": "Web Push (FCM)",
+        "description": "适用于桌面 Chrome、安卓 Chrome 以及其它支持 FCM 的浏览器。"
+      },
+      "telegram": {
+        "name": "Telegram",
+        "description": "海外用户首选。打开链接并点击 Start 即可绑定。",
+        "bind": "通过 Telegram 绑定",
+        "scanQr": "或用 Telegram 扫此二维码",
+        "expiresIn": "{minutes} 分钟后失效"
+      },
+      "email": {
+        "name": "邮件",
+        "description": "兜底渠道。发送到你的账号邮箱。"
+      }
+    },
+    "addToken": "添加",
+    "test": "发送测试",
+    "delete": "移除"
+  },
+  "History": {
+    "title": "扫码历史",
+    "subtitle": "最近的通知及送达状态。",
+    "empty": "暂无扫码记录。",
+    "Table": {
+      "time": "时间",
+      "tag": "挪车码",
+      "message": "留言",
+      "status": "状态",
+      "channels": "送达渠道"
+    }
+  }
+}

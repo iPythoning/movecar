@@ -1,0 +1,57 @@
+name = "movecar-worker"
+main = "src/index.ts"
+compatibility_date = "2026-04-01"
+compatibility_flags = ["nodejs_compat"]
+
+# Production routes — scan short-link domain + api subpaths on SaaS domain
+# Both domains need to be zones in Cloudflare before `wrangler deploy`
+# [[routes]] here is filled in the env sections below to avoid routing during `wrangler dev`
+
+[vars]
+ENVIRONMENT = "dev"
+SAAS_API_URL = "http://localhost:3000"
+
+# KV for rate limit counters + short-lived tag metadata cache
+[[kv_namespaces]]
+binding = "MOVECAR_KV"
+id = "6408fd8431b447d996ef8280b8944625"
+
+# ---------------------------------------------------------------------------
+# Staging
+# ---------------------------------------------------------------------------
+[env.staging]
+name = "movecar-worker-staging"
+routes = [
+  { pattern = "t-staging.autoglobalai.com/*", zone_name = "autoglobalai.com" },
+]
+
+[env.staging.vars]
+ENVIRONMENT = "staging"
+SAAS_API_URL = "https://movecar-staging.autoglobalai.com"
+
+[[env.staging.kv_namespaces]]
+binding = "MOVECAR_KV"
+id = "337019c18a8945f3acd69251e92d5604"
+
+# ---------------------------------------------------------------------------
+# Production
+# ---------------------------------------------------------------------------
+[env.production]
+name = "movecar-worker"
+routes = [
+  { pattern = "t.autoglobalai.com/*", zone_name = "autoglobalai.com" },
+]
+
+[env.production.vars]
+ENVIRONMENT = "production"
+SAAS_API_URL = "https://movecar.autoglobalai.com"
+
+[[env.production.kv_namespaces]]
+binding = "MOVECAR_KV"
+id = "6408fd8431b447d996ef8280b8944625"
+
+# Secrets (set via `wrangler secret put` — DO NOT store values here):
+#   WORKER_SECRET              HMAC key shared with SaaS for /api/internal/* auth
+#   TELEGRAM_MOVECAR_BOT_TOKEN Direct push from edge
+#   FCM_SERVER_KEY             Direct push from edge
+#   BARK_DEFAULT_URL           Optional fallback (usually per-user)

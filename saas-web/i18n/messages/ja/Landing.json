@@ -1,0 +1,118 @@
+{
+  "Hero": {
+    "badge": {
+      "label": "NEW",
+      "text": "プライバシー重視のスマート駐車QR",
+      "href": "#pricing"
+    },
+    "title": "駐車中に電話番号を晒す必要はもうありません",
+    "description": "MoveCarは、ダッシュボード用のスマートQRコードを提供します。誰でもスキャンして、Bark/FCM/Telegram/Emailで即座に通知。プライバシーを保護し、不要な電話を防ぎます。",
+    "getStarted": "QRコードを取得",
+    "getStartedLink": "#pricing",
+    "viewDocs": "使い方",
+    "viewDocsLink": "#how-it-works"
+  },
+  "Features": {
+    "badge": {
+      "label": "FEATURES",
+      "text": "スマート駐車アラート"
+    },
+    "title": "なぜMoveCarを選ぶ？",
+    "description": "ダッシュボードに電話番号を置く従来の方法に代わる、プライバシー重視のモダンなソリューション。",
+    "items": [
+      {
+        "title": "100%プライバシー保護",
+        "description": "もう個人の電話番号を紙に書く必要はありません。あなたの番号は見知らぬ人から完全に隠されます。",
+        "details": [],
+        "images": []
+      },
+      {
+        "title": "スキャナーはアプリ不要",
+        "description": "スマートフォンがあれば誰でもQRコードをスキャンできます。ブラウザで直接開くため、アプリのダウンロードは不要です。",
+        "details": [],
+        "images": []
+      },
+      {
+        "title": "即時ネイティブ通知",
+        "description": "Bark、FCM、Telegram、Emailを通じて、車を移動してほしいときに即座にプッシュ通知を受け取れます。",
+        "details": [],
+        "images": []
+      },
+      {
+        "title": "位置情報の共有",
+        "description": "スキャナーの正確な位置が通知に自動的に添付されるため、どこに車があるか正確に把握できます。",
+        "details": [],
+        "images": []
+      }
+    ]
+  },
+  "UseCases": {
+    "badge": {
+      "label": "HOW IT WORKS",
+      "text": "簡単3ステップ"
+    },
+    "title": "スキャンするだけの簡単さ",
+    "description": "2分以内に設定を完了し、生涯のプライバシーを手に入れましょう。",
+    "cases": [
+      {
+        "title": "1. QRコードを取得",
+        "description": "登録して、美しくデザインされたPDF形式のQRコードをダウンロードします。",
+        "image": "/placeholder.webp",
+        "icon": "CreditCard"
+      },
+      {
+        "title": "2. 印刷して設置",
+        "description": "印刷してダッシュボードに置くか、プレミアム物理ステッカーを注文します。",
+        "image": "/placeholder.webp",
+        "icon": "FileText"
+      },
+      {
+        "title": "3. 通知を受け取る",
+        "description": "Bark/FCM/Telegram/Emailのいずれかをダッシュボードで連携し、スキャン時に即座にアラートを受け取ります。",
+        "image": "/placeholder.webp",
+        "icon": "Bot"
+      }
+    ]
+  },
+  "Testimonials": {
+    "badge": {
+      "label": "TESTIMONIALS"
+    },
+    "title": "世界中のドライバーに信頼されています",
+    "description": "プライバシーを取り戻した何千ものドライバーに参加してください。"
+  },
+  "FAQ": {
+    "title": "よくある質問",
+    "description": "MoveCarについて知っておくべきこと。",
+    "items": [
+      {
+        "question": "車をスキャンする人はアプリをダウンロードする必要がありますか？",
+        "answer": "いいえ！それが最大の利点です。スキャナーは通常のカメラアプリでQRコードを読み取るだけで、すぐに通知できる安全なWebページが開きます。"
+      },
+      {
+        "question": "通知はどのように受け取りますか？",
+        "answer": "車の所有者は、ダッシュボードでBark、FCM（Android/Web）、Telegram、Emailのいずれかを連携します。高優先度のプッシュ通知を即座に受け取れます。"
+      },
+      {
+        "question": "生涯プランは本当に一回払いですか？",
+        "answer": "はい！生涯プラン（$29）を選べば、二度と請求されることはありません。無制限のQRコードと無制限の通知を生涯利用できます。"
+      },
+      {
+        "question": "複数の車に使えますか？",
+        "answer": "無料プランは1台、Pro月額/年額は最大10台、生涯プランは1アカウントで無制限のQRコードが利用できます。"
+      }
+    ]
+  },
+  "CTA": {
+    "title": "今日からプライバシーを守る",
+    "description": "MoveCarを今すぐ始めましょう。Proは月額$4.9、年額$49、生涯プランは$29です。",
+    "button": "今すぐ始める",
+    "trustText": "一回払いで、生涯安心。",
+    "features": {
+      "deploy": "🔒 100%プライベート",
+      "production": "⚡ 即時通知",
+      "updates": "📱 スキャナーはアプリ不要",
+      "i18n": "🌍 世界中で利用可能"
+    }
+  }
+}
