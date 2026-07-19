@@ -9,6 +9,7 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
+    "typecheck": "tsc --noEmit",
     "lint": "eslint .",
     "analyze": "ANALYZE=true next build",
     "fix": "npm install fix-react2shell-next@latest && npx fix-react2shell-next",
