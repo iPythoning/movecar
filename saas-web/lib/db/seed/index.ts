@@ -9,7 +9,7 @@
  * 支持 upsert（插入或更新）操作。
  *
  * Usage / 使用方法:
- * pnpm db:seed
+ * npm run db:seed
  */
 
 import { loadEnvConfig } from '@next/env'
@@ -126,8 +126,8 @@ async function main() {
     console.log('\n🎉 Database seeded successfully!')
     console.log('\nNext steps:')
     console.log('  - Edit lib/db/seed/pricing-config.ts to modify pricing')
-    console.log('  - Run `pnpm db:seed` to sync changes to database')
-    console.log('  - Run `pnpm db:export-pricing` to export database to config')
+    console.log('  - Run `npm run db:seed` to sync changes to database')
+    console.log('  - Run `npm run db:export-pricing` to export database to config')
   } catch (error) {
     console.error('\n❌ An error occurred while seeding the database:', error)
     process.exit(1)

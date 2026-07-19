@@ -3,10 +3,10 @@
  * MoveCar 定价配置文件
  *
  * Single source of truth for MoveCar SaaS pricing plans.
- * AI can edit this file directly, then run `pnpm db:seed` to sync to database.
+ * AI can edit this file directly, then run `npm run db:seed` to sync to database.
  *
  * 本文件作为 MoveCar SaaS 定价计划的单一真相来源。
- * 可以直接编辑后运行 `pnpm db:seed` 同步到数据库。
+ * 可以直接编辑后运行 `npm run db:seed` 同步到数据库。
  *
  * Setup required environment variables:
  * - STRIPE_PRICE_ID_PRO_MONTHLY
@@ -163,14 +163,14 @@ export const pricingPlans: PricingPlanConfig[] = [
     cardDescription: 'Full multi-channel coverage for daily drivers.',
     provider: 'stripe',
     stripePriceId:
-      process.env.STRIPE_PRICE_ID_PRO_MONTHLY || 'price_1TuCdvJ0sxpFhqdN8qkm5hJV',
+      process.env.STRIPE_PRICE_ID_PRO_MONTHLY || 'price_1Tu23lJ0sxpFhqdNKCUxqIfs',
     stripeProductId:
-      process.env.STRIPE_PRODUCT_ID_PRO_MONTHLY || 'prod_Uu0e7cvIjSjql8',
+      process.env.STRIPE_PRODUCT_ID_PRO_MONTHLY || 'prod_UtpiE16J5ljGde',
     paymentType: 'recurring',
     recurringInterval: 'month',
-    price: '1',
+    price: '4.9',
     currency: 'USD',
-    displayPrice: '$1.00',
+    displayPrice: '$4.9',
     originalPrice: '',
     priceSuffix: '/mo',
     features: proFeatures,
@@ -183,7 +183,7 @@ export const pricingPlans: PricingPlanConfig[] = [
       en: {
         cardTitle: 'Pro Monthly',
         cardDescription: 'Full multi-channel coverage for daily drivers.',
-        displayPrice: '$1.00',
+        displayPrice: '$4.9',
         priceSuffix: '/mo',
         buttonText: 'Subscribe Monthly',
         features: proFeatures,
@@ -191,7 +191,7 @@ export const pricingPlans: PricingPlanConfig[] = [
       zh: {
         cardTitle: '专业版月付',
         cardDescription: '全通道挪车通知，适合日常用车。',
-        displayPrice: '$1.00',
+        displayPrice: '$4.9',
         priceSuffix: '/月',
         buttonText: '按月订阅',
         features: [
@@ -209,6 +209,71 @@ export const pricingPlans: PricingPlanConfig[] = [
     } as PricingBenefits,
   },
   {
+    id: 'e8c5c9c2-cb86-4ab5-a09f-3e1df8b22b7b',
+    environment: (process.env.PRICING_ENVIRONMENT as 'test' | 'live') || 'test',
+    groupSlug: 'monthly',
+    cardTitle: 'Pro Yearly',
+    cardDescription: 'Full multi-channel coverage with annual savings.',
+    provider: 'stripe',
+    stripePriceId:
+      process.env.STRIPE_PRICE_ID_PRO_YEARLY || 'price_1Tu23mJ0sxpFhqdNRVHgNFNQ',
+    stripeProductId:
+      process.env.STRIPE_PRODUCT_ID_PRO_YEARLY || 'prod_UtpjyFG3IGyt2y',
+    paymentType: 'recurring',
+    recurringInterval: 'year',
+    price: '49',
+    currency: 'USD',
+    displayPrice: '$49',
+    originalPrice: '',
+    priceSuffix: '/year',
+    features: proFeatures,
+    isHighlighted: true,
+    highlightText: 'Best Value',
+    buttonText: 'Subscribe Yearly',
+    displayOrder: 2,
+    isActive: true,
+    langJsonb: {
+      en: {
+        cardTitle: 'Pro Yearly',
+        cardDescription: 'Full multi-channel coverage with annual savings.',
+        displayPrice: '$49',
+        priceSuffix: '/year',
+        buttonText: 'Subscribe Yearly',
+        highlightText: 'Best Value',
+        features: proFeatures,
+      },
+      zh: {
+        cardTitle: '专业版年付',
+        cardDescription: '全通道挪车通知，按年订阅更优惠。',
+        displayPrice: '$49',
+        priceSuffix: '/年',
+        buttonText: '按年订阅',
+        highlightText: '最划算',
+        features: [
+          { included: true, description: '10 个车辆 Tag' },
+          { included: true, description: '无限条通知' },
+          { included: true, description: '全通道推送：Bark / FCM / Telegram / 邮件' },
+          { included: true, description: '30+ 款二维码模板' },
+          { included: true, description: '180 天通知历史' },
+          { included: true, description: '扫码热力图与数据分析' },
+        ],
+      },
+      ja: {
+        cardTitle: 'Pro 年額',
+        cardDescription: 'すべての通知チャネルを年間プランでお得に利用。',
+        displayPrice: '$49',
+        priceSuffix: '/年',
+        buttonText: '年額で購読',
+        highlightText: 'おすすめ',
+        features: proFeatures,
+      },
+    },
+    benefitsJsonb: {
+      movecarPlanType: 'pro_yearly',
+      totalMonths: 12,
+    } as PricingBenefits,
+  },
+  {
     id: '5c83c82b-37e8-406e-9f39-cafcab459e2d',
     environment: (process.env.PRICING_ENVIRONMENT as 'test' | 'live') || 'test',
     groupSlug: 'onetime',
@@ -216,14 +281,14 @@ export const pricingPlans: PricingPlanConfig[] = [
     cardDescription: 'One-time payment, forever protection.',
     provider: 'stripe',
     stripePriceId:
-      process.env.STRIPE_PRICE_ID_LIFETIME || 'price_1TuCdwJ0sxpFhqdNf2s2HLvM',
+      process.env.STRIPE_PRICE_ID_LIFETIME || 'price_1Tu23mJ0sxpFhqdNs60MtyV3',
     stripeProductId:
-      process.env.STRIPE_PRODUCT_ID_LIFETIME || 'prod_Uu0eIb3H86AC1f',
+      process.env.STRIPE_PRODUCT_ID_LIFETIME || 'prod_UtpiJhSdaCU4Sr',
     paymentType: 'one_time',
     recurringInterval: null,
-    price: '9.9',
+    price: '29',
     currency: 'USD',
-    displayPrice: '$9.90',
+    displayPrice: '$29',
     originalPrice: '$29',
     priceSuffix: '/lifetime',
     features: lifetimeFeatures,
@@ -236,7 +301,7 @@ export const pricingPlans: PricingPlanConfig[] = [
       en: {
         cardTitle: 'Lifetime',
         cardDescription: 'One-time payment, forever protection.',
-        displayPrice: '$9.90',
+        displayPrice: '$29',
         originalPrice: '$29',
         priceSuffix: '/lifetime',
         buttonText: 'Buy Lifetime',
@@ -246,7 +311,7 @@ export const pricingPlans: PricingPlanConfig[] = [
       zh: {
         cardTitle: '终身版',
         cardDescription: '一次付费，终身守护。',
-        displayPrice: '$9.90',
+        displayPrice: '$29',
         originalPrice: '$29',
         priceSuffix: '/终身',
         buttonText: '购买终身版',
