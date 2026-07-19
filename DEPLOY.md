@@ -294,7 +294,7 @@ npm run db:seed
 
 ## 11. 已知本地问题
 
-- `pnpm lint` 可能因 `eslint` v9 + `.eslintrc.js` legacy 配置失败。临时绕过：直接跑 `node node_modules/typescript/bin/tsc --noEmit` 做类型检查。
+- SaaS 使用 `npm run lint`、`npm run typecheck`、`npm run build`；Worker 使用 `npm test` 和 `npm run typecheck`。
 - saas-web 缺少 Vitest 测试脚本；关键逻辑依赖 Worker 单测和手动回归。
 
 ---

@@ -65,16 +65,6 @@ const withBundleAnalyzerWrapper = withBundleAnalyzer({
   enabled: process.env.ANALYZE === "true",
 });
 
-if (
-  process.env.NODE_ENV === "development" &&
-  !process.env.NEXTY_WELCOME_SHOWN
-) {
-  console.log("\n🎉 Welcome to NEXTY.DEV Boilerplate!");
-  console.log("💬 Join our Discord community: https://discord.gg/VRDxBgXUZ8");
-  console.log("📚 Documentation: https://nexty.dev/docs\n\n");
-  process.env.NEXTY_WELCOME_SHOWN = "true";
-}
-
 const sentryConfig = {
   // Suppress noisy Sentry CLI output during build
   silent: !process.env.CI,

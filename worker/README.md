@@ -10,9 +10,9 @@ Companion SaaS at `movecar.autoglobalai.com` (Next.js on Vercel).
 ## Setup
 
 ```bash
-pnpm install
+npm ci
 cp .dev.vars.example .dev.vars   # fill secrets for local dev
-pnpm dev
+npm run dev
 curl http://localhost:8787/health
 ```
 
@@ -30,8 +30,8 @@ wrangler secret put TELEGRAM_MOVECAR_BOT_TOKEN --env production
 wrangler secret put FCM_SERVER_KEY --env production
 
 # deploy
-pnpm deploy:staging
-pnpm deploy:production
+npm run deploy:staging
+npm run deploy:production
 ```
 
 ## Route map
