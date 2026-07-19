@@ -1,4 +1,4 @@
-import { getSession } from "@/lib/auth/server";
+import { getSession, isAdmin } from "@/lib/auth/server";
 import { redirect } from "next/navigation";
 
 export async function AuthGuard({
@@ -16,7 +16,7 @@ export async function AuthGuard({
   }
 
   // dashboard/(admin)/*
-  if (role && role === "admin" && session.user.role !== role) {
+  if (role === "admin" && !(await isAdmin())) {
     redirect("/dashboard");
   }
 

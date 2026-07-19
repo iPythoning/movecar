@@ -10,7 +10,10 @@ interface ImageGridItem {
 }
 
 export function ImageGridReadOnlyView({ node }: NodeViewProps) {
-  const { images, columns } = node.attrs;
+  const { images, columns } = (node as unknown as { attrs: {
+    images: ImageGridItem[];
+    columns: number;
+  } }).attrs;
 
   const handleImageClick = (link?: string) => {
     if (link) {

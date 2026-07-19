@@ -25,7 +25,10 @@ export function ImageGridNodeView({
   deleteNode,
   editor,
 }: NodeViewProps) {
-  const { images, columns } = node.attrs;
+  const { images, columns } = (node as unknown as { attrs: {
+    images: ImageGridItem[];
+    columns: number;
+  } }).attrs;
   const [hoveredIndex, setHoveredIndex] = useState<number | null>(null);
   const [editingIndex, setEditingIndex] = useState<number | null>(null);
   const [editCaption, setEditCaption] = useState("");
@@ -33,7 +36,7 @@ export function ImageGridNodeView({
   const isEditable = editor.isEditable;
 
   const handleRemoveImage = (index: number) => {
-    const newImages = images.filter((_: any, i: number) => i !== index);
+    const newImages = images.filter((_, i) => i !== index);
     if (newImages.length === 0) {
       deleteNode();
     } else {
