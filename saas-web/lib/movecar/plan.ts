@@ -41,7 +41,7 @@ const PRO: MovecarPlanEntitlements = {
   plan: 'pro_monthly',
   maxTags: 10,
   maxNotificationsPerMonth: -1,
-  allowedChannels: ['bark', 'fcm', 'telegram', 'whatsapp', 'sms', 'email'],
+  allowedChannels: ['bark', 'fcm', 'telegram', 'email'],
   historyRetentionDays: 180,
   heatmapEnabled: true,
 }

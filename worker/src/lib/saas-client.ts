@@ -30,7 +30,7 @@ export interface NotifyResponse {
   notificationId: string
   oneTimeToken: string
   pushTokens: Array<{
-    channel: 'bark' | 'fcm' | 'telegram' | 'whatsapp' | 'sms' | 'email'
+    channel: 'bark' | 'fcm' | 'telegram' | 'email'
     tokenValue: string
   }>
   delayedUntil?: number

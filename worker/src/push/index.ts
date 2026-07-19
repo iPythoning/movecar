@@ -8,8 +8,6 @@ export type Channel =
   | 'bark'
   | 'fcm'
   | 'telegram'
-  | 'whatsapp'
-  | 'sms'
   | 'email'
 
 export interface PushToken {
@@ -54,9 +52,6 @@ async function dispatchOne(
         return await sendTelegram(env, token.tokenValue, payload)
       case 'email':
         return await sendEmail(env, token.tokenValue, payload)
-      case 'whatsapp':
-      case 'sms':
-        return { channel: token.channel, ok: false, detail: 'not_implemented' }
       default:
         return {
           channel: token.channel,

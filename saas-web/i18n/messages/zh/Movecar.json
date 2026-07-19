@@ -57,7 +57,13 @@
       },
       "fcm": {
         "name": "Web Push (FCM)",
-        "description": "适用于桌面 Chrome、安卓 Chrome 以及其它支持 FCM 的浏览器。"
+        "description": "适用于桌面 Chrome、安卓 Chrome 以及其它支持 FCM 的浏览器。",
+        "bind": "启用浏览器通知",
+        "notConfigured": "浏览器推送尚未配置。",
+        "unsupported": "请在 HTTPS 且支持通知的浏览器中使用。",
+        "permissionDenied": "你拒绝了浏览器通知权限。",
+        "failed": "无法启用浏览器通知。",
+        "bound": "浏览器通知已启用。"
       },
       "telegram": {
         "name": "Telegram",

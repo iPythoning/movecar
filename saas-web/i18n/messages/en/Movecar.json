@@ -57,7 +57,13 @@
       },
       "fcm": {
         "name": "Web Push (FCM)",
-        "description": "Desktop Chrome, Android Chrome, and other FCM-compatible browsers."
+        "description": "Desktop Chrome, Android Chrome, and other FCM-compatible browsers.",
+        "bind": "Enable browser notifications",
+        "notConfigured": "Browser push is not configured yet.",
+        "unsupported": "Use HTTPS in a browser that supports notifications.",
+        "permissionDenied": "Browser notification permission was denied.",
+        "failed": "Could not enable browser notifications.",
+        "bound": "Browser notifications enabled."
       },
       "telegram": {
         "name": "Telegram",

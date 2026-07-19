@@ -84,7 +84,7 @@ const freeFeatures: PricingFeature[] = [
   { included: true, description: '30 notifications / month' },
   { included: true, description: 'Bark + Email push channels' },
   { included: true, description: '3 basic QR templates' },
-  { included: false, description: 'Multi-channel push (FCM/Telegram/WhatsApp/SMS)' },
+  { included: false, description: 'Multi-channel push (FCM/Telegram)' },
   { included: false, description: 'Scan heatmap & analytics' },
 ]
 
@@ -146,7 +146,7 @@ export const pricingPlans: PricingPlanConfig[] = [
           { included: true, description: '每月 30 条通知' },
           { included: true, description: 'Bark + 邮件推送' },
           { included: true, description: '3 款基础二维码模板' },
-          { included: false, description: '多通道推送（FCM/Telegram/WhatsApp/SMS）' },
+          { included: false, description: '多通道推送（FCM/Telegram）' },
           { included: false, description: '扫码热力图与数据分析' },
         ],
       },

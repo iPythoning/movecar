@@ -15,7 +15,7 @@ export interface Env {
   SAAS_API_URL: string
   WORKER_SECRET: string
   TELEGRAM_MOVECAR_BOT_TOKEN?: string
-  FCM_SERVER_KEY?: string
+  FCM_SERVICE_ACCOUNT_JSON?: string
   BARK_DEFAULT_URL?: string
   MOVECAR_KV: KVNamespace
 }

@@ -40,8 +40,6 @@ export const PUSH_CHANNELS = [
   'bark',
   'fcm',
   'telegram',
-  'whatsapp',
-  'sms',
   'email',
 ] as const
 export type PushChannel = (typeof PUSH_CHANNELS)[number]

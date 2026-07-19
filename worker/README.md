@@ -27,7 +27,7 @@ wrangler kv namespace create MOVECAR_KV --env staging
 # put secrets per env
 wrangler secret put WORKER_SECRET --env production
 wrangler secret put TELEGRAM_MOVECAR_BOT_TOKEN --env production
-wrangler secret put FCM_SERVER_KEY --env production
+wrangler secret put FCM_SERVICE_ACCOUNT_JSON --env production
 
 # deploy
 npm run deploy:staging

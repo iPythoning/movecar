@@ -18,7 +18,7 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Switch } from '@/components/ui/switch'
-import { PUSH_CHANNELS, type PushChannel } from '@/lib/movecar/validations'
+import type { PushChannel } from '@/lib/movecar/validations'
 
 interface Props {
   tokens: MovecarPushToken[]
@@ -78,6 +78,64 @@ export function ChannelCards({ tokens }: Props) {
           deepLink: res.data.deepLink,
           expiresAt: Date.now() + res.data.expiresInSeconds * 1000,
         })
+      }
+    })
+  }
+
+  const onBindFcm = () => {
+    start(async () => {
+      const config = {
+        apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
+        authDomain: process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN,
+        projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID,
+        storageBucket: process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET,
+        messagingSenderId: process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID,
+        appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID,
+        vapidKey: process.env.NEXT_PUBLIC_FIREBASE_VAPID_KEY,
+      }
+
+      if (Object.values(config).some((value) => !value)) {
+        toast.error(t('Channels.fcm.notConfigured'))
+        return
+      }
+      if (!window.isSecureContext || !('Notification' in window) || !('serviceWorker' in navigator)) {
+        toast.error(t('Channels.fcm.unsupported'))
+        return
+      }
+
+      try {
+        const [{ getApps, initializeApp }, { getMessaging, getToken }] = await Promise.all([
+          import('firebase/app'),
+          import('firebase/messaging'),
+        ])
+        const app = getApps().find((item) => item.name === 'movecar-fcm')
+          ?? initializeApp(config, 'movecar-fcm')
+        const permission = await Notification.requestPermission()
+        if (permission !== 'granted') {
+          toast.error(t('Channels.fcm.permissionDenied'))
+          return
+        }
+        const serviceWorkerRegistration = await navigator.serviceWorker.register(
+          '/firebase-messaging-sw.js'
+        )
+        const token = await getToken(getMessaging(app), {
+          vapidKey: config.vapidKey,
+          serviceWorkerRegistration,
+        })
+        if (!token) {
+          toast.error(t('Channels.fcm.failed'))
+          return
+        }
+        const res = await addPushTokenAction({ channel: 'fcm', tokenValue: token })
+        if (!res.success) {
+          toast.error(res.error)
+          return
+        }
+        toast.success(t('Channels.fcm.bound'))
+        router.refresh()
+      } catch (error) {
+        console.error('[movecar] FCM binding failed:', error)
+        toast.error(t('Channels.fcm.failed'))
       }
     })
   }
@@ -149,9 +207,9 @@ export function ChannelCards({ tokens }: Props) {
         title={t('Channels.fcm.name')}
         description={t('Channels.fcm.description')}
       >
-        <div className="text-sm text-muted-foreground">
-          Browser FCM binding coming in a follow-up release.
-        </div>
+        <Button size="sm" onClick={onBindFcm} disabled={pending}>
+          {t('Channels.fcm.bind')}
+        </Button>
         <TokenList
           tokens={byChannel('fcm')}
           onDelete={onDelete}
@@ -242,6 +300,3 @@ function TokenList({
     </ul>
   )
 }
-
-// silence "unused import" for PUSH_CHANNELS; used implicitly via PushChannel type
-export const _channels = PUSH_CHANNELS

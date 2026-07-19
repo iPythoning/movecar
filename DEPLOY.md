@@ -135,7 +135,7 @@ TELEGRAM_MOVECAR_BOT_TOKEN=...
 NEXT_PUBLIC_TELEGRAM_MOVECAR_BOT_USERNAME=...
 TELEGRAM_WEBHOOK_SECRET=...
 
-FCM_SERVER_KEY=...
+FCM_SERVICE_ACCOUNT_JSON='{"type":"service_account",...}'
 ```
 
 ### 部署命令
@@ -201,7 +201,7 @@ npm exec -- wrangler kv namespace create MOVECAR_KV --env production
 ```bash
 npm exec -- wrangler secret put WORKER_SECRET --env production
 npm exec -- wrangler secret put TELEGRAM_MOVECAR_BOT_TOKEN --env production
-npm exec -- wrangler secret put FCM_SERVER_KEY --env production
+npm exec -- wrangler secret put FCM_SERVICE_ACCOUNT_JSON --env production
 npm exec -- wrangler secret put BARK_DEFAULT_URL --env production  # 可选
 ```
 
