@@ -51,7 +51,7 @@ jobs:
         run: npm run typecheck
 
       - name: Payment contract tests
-        run: ./node_modules/.bin/tsx --test lib/paibao-pay/core.test.ts
+        run: NODE_OPTIONS=--conditions=react-server ./node_modules/.bin/tsx --test lib/paibao-pay/core.test.ts lib/paibao-pay/config.test.ts
 
   deploy-production:
     name: Deploy to Vercel Production
