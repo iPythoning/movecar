@@ -22,6 +22,26 @@ jobs:
   typecheck:
     name: Type Check
     runs-on: ubuntu-latest # guard: allow public repository uses hosted runner for untrusted PR isolation
+    permissions:
+      contents: read
+    env:
+      NEXT_PUBLIC_SITE_URL: https://movecar.fixture.invalid
+      BETTER_AUTH_SECRET: synthetic-ci-auth-secret-with-at-least-32-characters
+      NEXT_TELEMETRY_DISABLED: '1'
+    services:
+      postgres:
+        image: postgres:16-alpine@sha256:721873c34ceb9f8d8fc265984940dc982404c105f19ad51be9fdc5970a6080ea
+        env:
+          POSTGRES_DB: movecar_launch_test
+          POSTGRES_USER: movecar_test
+          POSTGRES_HOST_AUTH_METHOD: trust
+        options: >-
+          --memory=512m
+          --publish 127.0.0.1::5432
+          --health-cmd "pg_isready -U movecar_test -d movecar_launch_test"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
     defaults:
       run:
         working-directory: saas-web
@@ -44,14 +64,66 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      - name: Configure isolated database
+        env:
+          POSTGRES_CONTAINER_ID: ${{ job.services.postgres.id }}
+        run: |
+          set -euo pipefail
+          binding="$(docker port "$POSTGRES_CONTAINER_ID" 5432/tcp)"
+          if [[ ! "$binding" =~ ^127\.0\.0\.1:([0-9]+)$ ]]; then
+            echo 'PostgreSQL must have exactly one loopback-only port binding.' >&2
+            exit 1
+          fi
+          database_url="postgresql://movecar_test@127.0.0.1:${BASH_REMATCH[1]}/movecar_launch_test"
+          printf 'DATABASE_URL=%s\nMOVECAR_PAYMENT_TEST_DATABASE_URL=%s\n' "$database_url" "$database_url" >> "$GITHUB_ENV"
+
       - name: Generate Drizzle client
         run: npm run db:generate
 
       - name: Type check
         run: npm run typecheck
 
-      - name: Payment contract tests
-        run: NODE_OPTIONS=--conditions=react-server ./node_modules/.bin/tsx --test lib/paibao-pay/core.test.ts lib/paibao-pay/config.test.ts
+      - name: Lint
+        run: npm run lint
+
+      - name: Initialize isolated database schema
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import os
+          from urllib.parse import urlparse
+          database = urlparse(os.environ['MOVECAR_PAYMENT_TEST_DATABASE_URL'])
+          assert database.hostname == '127.0.0.1'
+          assert database.path == '/movecar_launch_test'
+          assert not database.password
+          assert os.environ['DATABASE_URL'] == database.geturl()
+          PY
+          npm run db:push -- --force
+
+      - name: Payment contracts and PostgreSQL integration
+        run: |
+          set -euo pipefail
+          : "${MOVECAR_PAYMENT_TEST_DATABASE_URL:?Isolated payment database is required}"
+          NODE_OPTIONS=--conditions=react-server ./node_modules/.bin/tsx --test \
+            --test-reporter=spec --test-reporter-destination=stdout \
+            --test-reporter=junit --test-reporter-destination=payment-test-results.xml \
+            lib/paibao-pay/core.test.ts lib/paibao-pay/config.test.ts lib/paibao-pay/db.test.ts
+          python3 - <<'PY'
+          import xml.etree.ElementTree as ET
+          report = ET.parse('payment-test-results.xml').getroot()
+          cases = list(report.iter('testcase'))
+          assert cases, 'No payment tests were executed'
+          assert not list(report.iter('skipped')), 'Payment tests must not be skipped'
+          assert not list(report.iter('failure')), 'Payment tests failed'
+          assert not list(report.iter('error')), 'Payment tests errored'
+          database_cases = [case for case in cases if case.attrib.get('name') ==
+              'Waffo database reservations, channel snapshots and signed deliveries remain isolated and idempotent']
+          assert len(database_cases) == 1, 'PostgreSQL payment integration test must execute'
+          print(f'Verified {len(cases)} payment tests including PostgreSQL, with zero skips')
+          PY
+
+      - name: Production build with synthetic configuration
+        run: npm run build
 
   deploy-production:
     name: Deploy to Vercel Production

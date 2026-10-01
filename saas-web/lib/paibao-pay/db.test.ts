@@ -4,10 +4,9 @@ import { test } from 'node:test';
 import { eq, inArray } from 'drizzle-orm';
 import { metadataOf } from './core';
 
-test('Waffo database reservations, channel snapshots and signed deliveries remain isolated and idempotent', {
-  skip: !process.env.MOVECAR_PAYMENT_TEST_DATABASE_URL,
-}, async () => {
-  const databaseUrl = process.env.MOVECAR_PAYMENT_TEST_DATABASE_URL!;
+test('Waffo database reservations, channel snapshots and signed deliveries remain isolated and idempotent', async () => {
+  const databaseUrl = process.env.MOVECAR_PAYMENT_TEST_DATABASE_URL;
+  assert.ok(databaseUrl, 'MOVECAR_PAYMENT_TEST_DATABASE_URL must explicitly select the isolated payment database.');
   const database = new URL(databaseUrl);
   assert.equal(database.hostname, '127.0.0.1');
   assert.equal(database.pathname, '/movecar_launch_test');
@@ -28,28 +27,28 @@ test('Waffo database reservations, channel snapshots and signed deliveries remai
   const previous = new Map(Object.keys(env).map(key => [key, process.env[key]]));
   Object.assign(process.env, env);
   const { db } = await import('@/lib/db');
-  const { user, pricingPlans, orders } = await import('@/lib/db/schema');
+  const { user, pricingPlanGroups, pricingPlans, orders } = await import('@/lib/db/schema');
   const { checkoutPlan, getPaymentOrder } = await import('./service');
   const { resolveMovecarPlan } = await import('@/lib/movecar/plan');
   const { POST } = await import('@/app/api/payment/paibao/fulfill/route');
   const users: string[] = [];
-  let fixturePlanId: string | undefined;
+  const fixtureGroupSlug = `waffo-test-${randomUUID()}`;
+  const fixturePlanId = randomUUID();
   const originalFetch = globalThis.fetch;
   try {
-    const [source] = await db.select().from(pricingPlans).limit(1);
-    assert.ok(source, 'Test database must contain its isolated pricing group fixture.');
+    await db.insert(pricingPlanGroups).values({ slug: fixtureGroupSlug });
     const [plan] = await db.insert(pricingPlans).values({
-      environment: 'test', groupSlug: source.groupSlug, cardTitle: 'waffo-test Lifetime',
+      id: fixturePlanId, environment: 'test', groupSlug: fixtureGroupSlug, cardTitle: 'waffo-test Lifetime',
       provider: 'none', paymentType: 'one_time', recurringInterval: null,
       price: '29.00', currency: 'USD', isActive: true, benefitsJsonb: { movecarPlanType: 'lifetime' },
     }).returning();
-    fixturePlanId = plan.id;
     process.env.WAFFO_PRODUCT_MAP = JSON.stringify({ [plan.id]: fixtureSku });
     const buyer = async (name: string) => {
+      const id = randomUUID();
+      users.push(id);
       const [row] = await db.insert(user).values({
-        id: randomUUID(), name: `waffo-test ${name}`, email: `${randomUUID()}@fixture.invalid`,
+        id, name: `waffo-test ${name}`, email: `${randomUUID()}@fixture.invalid`,
       }).returning();
-      users.push(row.id);
       return row;
     };
     let calls = 0;
@@ -134,12 +133,21 @@ test('Waffo database reservations, channel snapshots and signed deliveries remai
     assert.equal(metadataOf(unknown).checkoutState, 'unknown');
   } finally {
     globalThis.fetch = originalFetch;
-    if (users.length) await db.delete(user).where(inArray(user.id, users));
-    if (fixturePlanId) await db.delete(pricingPlans).where(eq(pricingPlans.id, fixturePlanId));
-    await db.$client.end();
+    const cleanupErrors: unknown[] = [];
+    const cleanup = [
+      async () => { if (users.length) await db.delete(user).where(inArray(user.id, users)); },
+      async () => { await db.delete(pricingPlans).where(eq(pricingPlans.id, fixturePlanId)); },
+      async () => { await db.delete(pricingPlanGroups).where(eq(pricingPlanGroups.slug, fixtureGroupSlug)); },
+      async () => { await db.$client.end(); },
+    ];
+    for (const remove of cleanup) {
+      try { await remove(); }
+      catch (error) { cleanupErrors.push(error); }
+    }
     for (const [key, value] of previous) {
       if (value === undefined) delete process.env[key];
       else process.env[key] = value;
     }
+    if (cleanupErrors.length) throw new AggregateError(cleanupErrors, 'Payment fixture cleanup failed.');
   }
 });
