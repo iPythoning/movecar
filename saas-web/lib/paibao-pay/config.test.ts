@@ -69,3 +69,41 @@ test('old order routing remains bound to its channel, API base and mode when def
     });
   });
 });
+
+test('new checkouts require a fulfillment secret for either payment channel', () => {
+  for (const channel of ['stripe', 'waffo']) {
+    for (const secret of [undefined, '', '   ']) {
+      withEnv({ PAY_CHECKOUT_CHANNEL: channel }, () => {
+        if (secret === undefined) delete process.env.PAIBAO_FULFILL_HMAC_SECRET;
+        else process.env.PAIBAO_FULFILL_HMAC_SECRET = secret;
+        assert.throws(() => paymentConfig(), error =>
+          error instanceof PaymentError && error.code === 'configuration_missing' && error.status === 503);
+      });
+    }
+  }
+});
+
+test('stored checkout snapshots still require the current fulfillment secret', () => {
+  const plan = {
+    id: planId, environment: 'test', isActive: true, cardTitle: 'Lifetime', paymentType: 'one_time',
+    recurringInterval: null, price: '29', currency: 'USD', benefitsJsonb: { movecarPlanType: 'lifetime' },
+  };
+  const stripe = snapshotPlan(plan, 'test', {
+    channel: 'stripe', apiBase: env.PAY_API_BASE, environment: 'test', productId: planId,
+  });
+  assert.ok(stripe.channel === 'stripe');
+  const legacyStripe = { ...stripe, gatewayApiBase: undefined, gatewayEnvironment: undefined };
+  const waffo = snapshotPlan(plan, 'test', {
+    channel: 'waffo', apiBase: env.PAY_WAFFO_API_BASE, environment: 'test', productId: sku, taxCategory: 'saas',
+  });
+  withEnv({ PAY_CHECKOUT_CHANNEL: '', WAFFO_ENV: '', WAFFO_PRODUCT_MAP: '' }, () => {
+    for (const snapshot of [stripe, legacyStripe, waffo]) {
+      assert.equal(paymentConfig(snapshot).channel, snapshot.channel);
+    }
+    delete process.env.PAIBAO_FULFILL_HMAC_SECRET;
+    for (const snapshot of [stripe, legacyStripe, waffo]) {
+      assert.throws(() => paymentConfig(snapshot), error =>
+        error instanceof PaymentError && error.code === 'configuration_missing' && error.status === 503);
+    }
+  });
+});

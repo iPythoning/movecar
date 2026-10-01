@@ -89,6 +89,7 @@ export function paymentConfig(snapshot?: PlanSnapshot) {
   } catch {
     throw new PaymentError('configuration_invalid', 503, 'Payment is temporarily unavailable.');
   }
+  fulfillSecret();
   return {
     apiBase: base.href.replace(/\/$/, ''), adminToken: required('PAY_ADMIN_TOKEN'),
     fulfillUrl: fulfillUrl.href, successUrl: successUrl.href, cancelUrl: cancelUrl.href,

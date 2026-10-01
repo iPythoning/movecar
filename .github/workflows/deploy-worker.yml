@@ -16,7 +16,7 @@ on:
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: true
+  cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
 
 jobs:
   typecheck-and-test:
@@ -52,12 +52,22 @@ jobs:
 
   deploy-production:
     name: Deploy to Cloudflare Production
+    # Public repository: production deployment uses the approved hosted runner.
     runs-on: ubuntu-latest
     needs: typecheck-and-test
     if: github.ref == 'refs/heads/main'
+    env:
+      WORKER_DIRECTORY: worker
+      WORKER_ENVIRONMENT: production
+      WORKER_ORIGIN: https://t.autoglobalai.com
+      COMMAND_TIMEOUT_SECONDS: '120'
+      SMOKE_CONNECT_TIMEOUT_SECONDS: '10'
+      SMOKE_TIMEOUT_SECONDS: '20'
+      WORKER_NOT_FOUND_PATH: /t/ci-unassigned-tag
+      WORKER_NOT_FOUND_MARKER: This parking tag is inactive
     defaults:
       run:
-        working-directory: worker
+        working-directory: ${{ env.WORKER_DIRECTORY }}
     steps:
       - uses: actions/checkout@v4
 
@@ -77,8 +87,102 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Deploy to Cloudflare
+      - name: Deploy, verify, and roll back on failure
+        shell: bash
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-        run: npm exec -- wrangler deploy --env production
+          WORKER_RELEASE_DIR: ${{ runner.temp }}/movecar-worker-release
+        run: |
+          set -euo pipefail
+          mkdir -p "$WORKER_RELEASE_DIR"
+
+          wrangler() {
+            timeout "${COMMAND_TIMEOUT_SECONDS}s" node node_modules/wrangler/bin/wrangler.js "$@" --env "$WORKER_ENVIRONMENT"
+          }
+
+          active_version() {
+            node - "$1" <<'NODE'
+          const fs = require('node:fs');
+          const deployments = JSON.parse(fs.readFileSync(process.argv[2], 'utf8'));
+          if (!Array.isArray(deployments) || !deployments.length ||
+              deployments.some(d => typeof d.created_on !== 'string' || !Number.isFinite(Date.parse(d.created_on)))) {
+            throw new Error('Missing or invalid deployment history');
+          }
+          // Wrangler lists oldest first; select by created_on, never array position.
+          const latest = [...deployments].sort((a, b) => Date.parse(b.created_on) - Date.parse(a.created_on))[0];
+          if (deployments.filter(d => Date.parse(d.created_on) === Date.parse(latest.created_on)).length !== 1 ||
+              !Array.isArray(latest.versions) || latest.versions.length !== 1 ||
+              latest.versions[0].percentage !== 100 ||
+              !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(latest.versions[0].version_id)) {
+            throw new Error('Expected one unambiguous Worker version at 100% traffic');
+          }
+          process.stdout.write(latest.versions[0].version_id);
+          NODE
+          }
+
+          smoke() {
+            local status
+            status=$(curl --silent --show-error --connect-timeout "$SMOKE_CONNECT_TIMEOUT_SECONDS" \
+              --max-time "$SMOKE_TIMEOUT_SECONDS" --output "$WORKER_RELEASE_DIR/health.json" \
+              --write-out '%{http_code}' "$WORKER_ORIGIN/health") || return 1
+            [[ "$status" == 200 ]] || { echo '::error::Worker health HTTP status failed'; return 1; }
+            node - "$WORKER_RELEASE_DIR/health.json" <<'NODE' || return 1
+          const fs = require('node:fs');
+          const health = JSON.parse(fs.readFileSync(process.argv[2], 'utf8'));
+          if (health.ok !== true || health.env !== process.env.WORKER_ENVIRONMENT) {
+            throw new Error('Worker health response failed');
+          }
+          NODE
+            # Longer than the DB shortCode column, but within the Worker route limit.
+            # This cannot be an assigned tag and exercises SaaS authentication and DB lookup.
+            status=$(curl --silent --show-error --connect-timeout "$SMOKE_CONNECT_TIMEOUT_SECONDS" \
+              --max-time "$SMOKE_TIMEOUT_SECONDS" --header 'Accept-Language: en' \
+              --output "$WORKER_RELEASE_DIR/not-found.html" --write-out '%{http_code}' \
+              "$WORKER_ORIGIN$WORKER_NOT_FOUND_PATH") || return 1
+            [[ "$status" == 404 ]] || { echo '::error::Worker unassigned-tag HTTP status failed'; return 1; }
+            node - "$WORKER_RELEASE_DIR/not-found.html" <<'NODE' || return 1
+          const fs = require('node:fs');
+          const html = fs.readFileSync(process.argv[2], 'utf8');
+          if (!/<!doctype html>/i.test(html) || !html.includes(process.env.WORKER_NOT_FOUND_MARKER)) {
+            throw new Error('Worker unassigned-tag response failed');
+          }
+          NODE
+          }
+
+          rollback() {
+            local failure="$1" restored_version
+            echo "::error::Worker release failed; restoring version $previous_version"
+            if ! wrangler rollback "$previous_version" --yes; then
+              echo '::error::Worker rollback failed; manual recovery required'
+              exit "$failure"
+            fi
+            if ! wrangler deployments list --json > "$WORKER_RELEASE_DIR/restored.json" ||
+               ! restored_version=$(active_version "$WORKER_RELEASE_DIR/restored.json") ||
+               [[ "$restored_version" != "$previous_version" ]]; then
+              echo '::error::Worker rollback version readback failed; manual recovery required'
+              exit "$failure"
+            fi
+            if ! smoke; then
+              echo '::error::Worker rollback restored the version, but runtime verification failed'
+              exit "$failure"
+            fi
+            printf 'Worker rollback verified: `%s`\n' "$restored_version" >> "$GITHUB_STEP_SUMMARY"
+            exit "$failure"
+          }
+
+          wrangler deployments list --json > "$WORKER_RELEASE_DIR/before.json"
+          previous_version=$(active_version "$WORKER_RELEASE_DIR/before.json")
+          printf 'Worker release commit: `%s`\nPrevious version: `%s`\n' "$GITHUB_SHA" "$previous_version" >> "$GITHUB_STEP_SUMMARY"
+          if ! wrangler deploy; then
+            rollback 1
+          fi
+          if ! wrangler deployments list --json > "$WORKER_RELEASE_DIR/after.json" ||
+             ! released_version=$(active_version "$WORKER_RELEASE_DIR/after.json") ||
+             [[ "$released_version" == "$previous_version" ]]; then
+            rollback 1
+          fi
+          if ! smoke; then
+            rollback 1
+          fi
+          printf 'Worker release verified: `%s`\n' "$released_version" >> "$GITHUB_STEP_SUMMARY"
