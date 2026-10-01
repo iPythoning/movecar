@@ -4,14 +4,13 @@ import { actionResponse, ActionResult } from '@/lib/action-response';
 import { db, isDatabaseEnabled } from '@/lib/db';
 import { pricingPlans as pricingPlansSchema } from '@/lib/db/schema';
 import { getErrorMessage } from '@/lib/error-utils';
-import { and, asc, eq } from 'drizzle-orm';
+import { and, asc, eq, sql } from 'drizzle-orm';
 import 'server-only';
 
 type PricingPlan = typeof pricingPlansSchema.$inferSelect
 
 /**
- * Public List - Returns all active pricing plans for the current environment
- * Filtering by groupSlug is handled on the frontend for better flexibility and caching
+ * Public List - Returns active MoveCar plans for the current environment.
  */
 export async function getPublicPricingPlans(): Promise<ActionResult<PricingPlan[]>> {
   if (!isDatabaseEnabled) {
@@ -27,7 +26,8 @@ export async function getPublicPricingPlans(): Promise<ActionResult<PricingPlan[
       .where(
         and(
           eq(pricingPlansSchema.environment, environment),
-          eq(pricingPlansSchema.isActive, true)
+          eq(pricingPlansSchema.isActive, true),
+          sql`${pricingPlansSchema.benefitsJsonb}->>'movecarPlanType' IN ('free', 'pro_monthly', 'pro_yearly', 'lifetime')`
         )
       )
       .orderBy(asc(pricingPlansSchema.displayOrder))

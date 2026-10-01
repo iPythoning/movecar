@@ -1,176 +1,74 @@
 "use client";
 
 import { Button } from "@/components/ui/button";
-import { DEFAULT_LOCALE, useRouter } from "@/i18n/routing";
+import { useRouter } from "@/i18n/routing";
 import { pricingPlans as pricingPlansSchema } from "@/lib/db/schema";
 import { Loader2, MousePointerClick } from "lucide-react";
 import { useLocale } from "next-intl";
-import Link from "next/link";
 import { useState } from "react";
 import { toast } from "sonner";
 
 type PricingPlan = typeof pricingPlansSchema.$inferSelect;
-
-type Params = {
-  plan: PricingPlan;
-  localizedPlan: any;
-};
+type Params = { plan: PricingPlan; localizedPlan: { buttonText?: string } };
 
 export default function PricingCTA({ plan, localizedPlan }: Params) {
   const [isLoading, setIsLoading] = useState(false);
+  const [checkoutUrl, setCheckoutUrl] = useState<string>();
+  const [orderId, setOrderId] = useState<string>();
   const router = useRouter();
   const locale = useLocale();
+  const recurring = plan.paymentType === "recurring";
+  const free = plan.provider === "none" && Number(plan.price) === 0;
+  const text = locale === "zh" ? {
+    unavailable: "订阅暂未开放，可选择终身版。", login: "请先登录再购买。",
+    failed: "暂时无法确认收款，请查看订单状态。", open: "打开收银台", check: "查看付款状态",
+  } : locale === "ja" ? {
+    unavailable: "定期購入は準備中です。Lifetime を選択できます。", login: "購入前にログインしてください。",
+    failed: "お支払いを確認できません。注文状況をご確認ください。", open: "決済ページを開く", check: "支払い状況を確認",
+  } : {
+    unavailable: "Subscriptions are temporarily unavailable. Please choose Lifetime.", login: "Please log in to purchase a plan.",
+    failed: "Checkout could not be confirmed. Please check your order.", open: "Open checkout", check: "Check payment status",
+  };
 
-  const provider = plan.provider;
-  const isCreem = provider === "creem";
-  const isStripe = provider === "stripe";
-
-  const handleCheckout = async (applyCoupon = true) => {
-    const stripePriceId = plan.stripePriceId ?? null;
-    if (isStripe && !stripePriceId) {
-      toast.error("Stripe price ID is missing for this plan.");
-      return;
-    }
-
-    const creemProductId = plan.creemProductId ?? null;
-    if (isCreem && !creemProductId) {
-      toast.error("Creem product ID is missing for this plan.");
-      return;
-    }
-
+  const handleCheckout = async () => {
+    if (free) { router.push("/dashboard/movecar/tags/new"); return; }
+    if (recurring) return;
+    setCheckoutUrl(undefined);
+    setOrderId(undefined);
     setIsLoading(true);
     try {
-      let requestBody: {
-        provider: string;
-        couponCode?: string;
-        // Stripe
-        stripePriceId?: string;
-        referral?: string;
-
-        // Creem
-        creemProductId?: string;
-      } = {
-        provider: provider || "stripe",
-      };
-
-      if (isStripe) {
-        requestBody.stripePriceId = stripePriceId!;
-        requestBody.couponCode =
-          applyCoupon && plan.stripeCouponId ? plan.stripeCouponId : undefined;
-
-        const toltReferral = (window as any).tolt_referral;
-        requestBody.referral = toltReferral ?? undefined;
-      }
-      if (isCreem) {
-        requestBody.creemProductId = creemProductId!;
-        requestBody.couponCode =
-          applyCoupon && plan.creemDiscountCode
-            ? plan.creemDiscountCode
-            : undefined;
-      }
-
       const response = await fetch("/api/payment/checkout-session", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "Accept-Language": (locale || DEFAULT_LOCALE) as string,
-        },
-        body: JSON.stringify(requestBody),
+        method: "POST", headers: { "Content-Type": "application/json", "Accept-Language": locale },
+        body: JSON.stringify({ planId: plan.id }),
       });
-
       const result = await response.json();
-
-      if (!response.ok) {
-        if (response.status === 401) {
-          router.push("/login");
-          toast.error("You must be logged in to purchase a plan.");
-          return;
-        }
-        throw new Error(
-          result.error || "HTTP error! status: " + response.status
-        );
+      if (typeof result.data?.orderId === "string") setOrderId(result.data.orderId);
+      if (response.status === 401) { router.push("/login"); toast.error(text.login); return; }
+      if (!response.ok || !result.success || typeof result.data?.checkoutUrl !== "string") {
+        throw new Error(text.failed);
       }
-
-      if (!result.success) {
-        throw new Error(result.error || "Failed to create checkout session.");
-      }
-
-      const data = result.data;
-
-      if (data.url) {
-        router.push(data.url);
-        setIsLoading(false);
-      } else {
-        throw new Error("Checkout URL not received.");
-      }
-    } catch (error) {
-      console.error("Checkout Error:", error);
-      toast.error(
-        error instanceof Error ? error.message : "An unexpected error occurred."
-      );
+      const url = new URL(result.data.checkoutUrl);
+      if (url.protocol !== "https:" || url.username || url.password) throw new Error(text.failed);
+      setCheckoutUrl(url.href);
+      window.open(url.href, "_blank", "noopener,noreferrer");
+    } catch {
+      console.error("Checkout could not be confirmed");
+      toast.error(text.failed);
+    } finally {
       setIsLoading(false);
     }
   };
 
-  let defaultCouponCode = null;
-  if (isCreem) {
-    defaultCouponCode = plan.creemDiscountCode;
-  } else if (isStripe) {
-    defaultCouponCode = plan.stripeCouponId;
-  }
-
-  const allowManualCoupon =
-    Boolean(defaultCouponCode) && plan.enableManualInputCoupon;
-
   return (
-    <div>
-      <Button
-        asChild={!!plan.buttonLink}
-        disabled={isLoading}
-        className={`w-full flex items-center justify-center gap-2 py-5 font-medium ${
-          plan.isHighlighted
-            ? ""
-            : "bg-gray-900 text-white dark:bg-white dark:text-gray-900 hover:bg-gray-800 dark:hover:bg-gray-100"
-        } ${allowManualCoupon ? "mb-2" : "mb-6"}`}
-        {...(!plan.buttonLink && {
-          onClick: () => handleCheckout(),
-        })}
-      >
-        {plan.buttonLink ? (
-          <Link
-            href={plan.buttonLink}
-            title={localizedPlan.buttonText || plan.buttonText}
-            rel="noopener noreferrer nofollow"
-            target="_blank"
-            prefetch={false}
-          >
-            {localizedPlan.buttonText || plan.buttonText}
-            {plan.isHighlighted && <MousePointerClick className="w-5 h-5" />}
-          </Link>
-        ) : (
-          <>
-            {isLoading ? (
-              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-            ) : (
-              localizedPlan.buttonText || plan.buttonText
-            )}
-            {plan.isHighlighted && !isLoading && (
-              <MousePointerClick className="w-5 h-5 ml-2" />
-            )}
-          </>
-        )}
+    <div className="mb-6 space-y-2">
+      <Button disabled={isLoading || recurring} onClick={handleCheckout}
+        className={`w-full flex items-center justify-center gap-2 py-5 font-medium ${plan.isHighlighted ? "" : "bg-gray-900 text-white dark:bg-white dark:text-gray-900 hover:bg-gray-800 dark:hover:bg-gray-100"}`}>
+        {isLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : localizedPlan.buttonText || plan.buttonText}
+        {plan.isHighlighted && !isLoading && <MousePointerClick className="w-5 h-5 ml-2" />}
       </Button>
-      {allowManualCoupon && (
-        <div className="text-center mb-2">
-          <button
-            onClick={() => handleCheckout(false)}
-            disabled={isLoading}
-            className="text-sm text-muted-foreground hover:text-foreground transition-colors disabled:opacity-50 underline underline-offset-2"
-          >
-            I have a different coupon code
-          </button>
-        </div>
-      )}
+      {recurring && <p className="text-sm text-muted-foreground">{text.unavailable}</p>}
+      {checkoutUrl && <a href={checkoutUrl} target="_blank" rel="noopener noreferrer nofollow" className="block text-sm text-center underline">{text.open}</a>}
+      {orderId && <button onClick={() => router.push(`/payment/order?order_id=${encodeURIComponent(orderId)}`)} className="block w-full text-sm text-center underline">{text.check}</button>}
     </div>
   );
 }

@@ -1,4 +1,4 @@
-import { escapeHtml } from '../lib/html'
+import { escapeHtml, scriptJson } from '../lib/html'
 import type { Locale, Messages } from '../lib/i18n'
 import { htmlLang } from '../lib/i18n'
 
@@ -73,10 +73,10 @@ export function renderScanPage(p: ScanPageProps): string {
 
 <script>
 (() => {
-  const SHORT_CODE = ${JSON.stringify(shortCode)};
-  const STATUS_GRANTED = ${JSON.stringify(m.scan.locationGranted)};
-  const STATUS_DENIED = ${JSON.stringify(m.scan.locationDenied)};
-  const STATUS_WAITING = ${JSON.stringify(m.scan.waiting)};
+  const SHORT_CODE = ${scriptJson(shortCode)};
+  const STATUS_GRANTED = ${scriptJson(m.scan.locationGranted)};
+  const STATUS_DENIED = ${scriptJson(m.scan.locationDenied)};
+  const STATUS_WAITING = ${scriptJson(m.scan.waiting)};
 
   const statusEl = document.getElementById('loc-status');
   const chips = document.querySelectorAll('.chip');
@@ -124,8 +124,9 @@ export function renderScanPage(p: ScanPageProps): string {
       form.classList.add('hidden');
       sentCard.classList.remove('hidden');
     } catch (err) {
+      console.error('Could not notify owner', err);
       submitBtn.disabled = false;
-      submitBtn.textContent = ${JSON.stringify(m.scan.submit)};
+      submitBtn.textContent = ${scriptJson(m.scan.submit)};
       alert('Failed: ' + (err && err.message || err));
     }
   });

@@ -16,12 +16,32 @@ on:
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: true
+  cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
 
 jobs:
   typecheck:
     name: Type Check
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-latest # guard: allow public repository uses hosted runner for untrusted PR isolation
+    permissions:
+      contents: read
+    env:
+      NEXT_PUBLIC_SITE_URL: https://movecar.fixture.invalid
+      BETTER_AUTH_SECRET: synthetic-ci-auth-secret-with-at-least-32-characters
+      NEXT_TELEMETRY_DISABLED: '1'
+    services:
+      postgres:
+        image: postgres:16-alpine@sha256:721873c34ceb9f8d8fc265984940dc982404c105f19ad51be9fdc5970a6080ea
+        env:
+          POSTGRES_DB: movecar_launch_test
+          POSTGRES_USER: movecar_test
+          POSTGRES_HOST_AUTH_METHOD: trust
+        options: >-
+          --memory=512m
+          --publish 127.0.0.1::5432
+          --health-cmd "pg_isready -U movecar_test -d movecar_launch_test"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
     defaults:
       run:
         working-directory: saas-web
@@ -43,6 +63,19 @@ jobs:
 
       - name: Install dependencies
         run: npm ci
+
+      - name: Configure isolated database
+        env:
+          POSTGRES_CONTAINER_ID: ${{ job.services.postgres.id }}
+        run: |
+          set -euo pipefail
+          binding="$(docker port "$POSTGRES_CONTAINER_ID" 5432/tcp)"
+          if [[ ! "$binding" =~ ^127\.0\.0\.1:([0-9]+)$ ]]; then
+            echo 'PostgreSQL must have exactly one loopback-only port binding.' >&2
+            exit 1
+          fi
+          database_url="postgresql://movecar_test@127.0.0.1:${BASH_REMATCH[1]}/movecar_launch_test"
+          printf 'DATABASE_URL=%s\nMOVECAR_PAYMENT_TEST_DATABASE_URL=%s\n' "$database_url" "$database_url" >> "$GITHUB_ENV"
 
       - name: Generate Drizzle client
         run: npm run db:generate
@@ -50,11 +83,59 @@ jobs:
       - name: Type check
         run: npm run typecheck
 
+      - name: Lint
+        run: npm run lint
+
+      - name: Initialize isolated database schema
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import os
+          from urllib.parse import urlparse
+          database = urlparse(os.environ['MOVECAR_PAYMENT_TEST_DATABASE_URL'])
+          assert database.hostname == '127.0.0.1'
+          assert database.path == '/movecar_launch_test'
+          assert not database.password
+          assert os.environ['DATABASE_URL'] == database.geturl()
+          PY
+          npm run db:push -- --force
+
+      - name: Payment contracts and PostgreSQL integration
+        run: |
+          set -euo pipefail
+          : "${MOVECAR_PAYMENT_TEST_DATABASE_URL:?Isolated payment database is required}"
+          NODE_OPTIONS=--conditions=react-server ./node_modules/.bin/tsx --test \
+            --test-reporter=spec --test-reporter-destination=stdout \
+            --test-reporter=junit --test-reporter-destination=payment-test-results.xml \
+            lib/paibao-pay/core.test.ts lib/paibao-pay/config.test.ts lib/paibao-pay/db.test.ts
+          python3 - <<'PY'
+          import xml.etree.ElementTree as ET
+          report = ET.parse('payment-test-results.xml').getroot()
+          cases = list(report.iter('testcase'))
+          assert cases, 'No payment tests were executed'
+          assert not list(report.iter('skipped')), 'Payment tests must not be skipped'
+          assert not list(report.iter('failure')), 'Payment tests failed'
+          assert not list(report.iter('error')), 'Payment tests errored'
+          database_cases = [case for case in cases if case.attrib.get('name') ==
+              'Waffo database reservations, channel snapshots and signed deliveries remain isolated and idempotent']
+          assert len(database_cases) == 1, 'PostgreSQL payment integration test must execute'
+          print(f'Verified {len(cases)} payment tests including PostgreSQL, with zero skips')
+          PY
+
+      - name: Production build with synthetic configuration
+        run: npm run build
+
   deploy-production:
     name: Deploy to Vercel Production
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-latest # guard: allow public repository uses hosted runner for untrusted PR isolation
     needs: typecheck
     if: github.ref == 'refs/heads/main'
+    env:
+      MOVECAR_DEPLOY_HOST: movecar-saas.vercel.app
+      MOVECAR_DEPLOY_SCOPE: fankaiwei3-5665s-projects
+      MOVECAR_DEPLOY_PROJECT: movecar-saas
+      MOVECAR_SMOKE_CONNECT_TIMEOUT_SECONDS: '10'
+      MOVECAR_SMOKE_TIMEOUT_SECONDS: '30'
     defaults:
       run:
         working-directory: saas-web
@@ -77,14 +158,122 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      - name: Configure isolated Vercel credentials
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+          VERCEL_GLOBAL_CONFIG: ${{ runner.temp }}/movecar-vercel-${{ github.run_id }}-${{ github.run_attempt }}
+        run: |
+          python3 - <<'PY'
+          import json, os
+          from pathlib import Path
+          token = os.environ.get('VERCEL_TOKEN', '').strip()
+          if not token:
+              raise SystemExit('VERCEL_TOKEN is required')
+          directory = Path(os.environ['VERCEL_GLOBAL_CONFIG'])
+          directory.mkdir(mode=0o700)
+          descriptor = os.open(directory / 'auth.json', os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o600)
+          with os.fdopen(descriptor, 'w') as auth:
+              json.dump({'token': token, 'skipWrite': True}, auth)
+          with open(os.environ['GITHUB_ENV'], 'a') as environment:
+              environment.write(f'VERCEL_GLOBAL_CONFIG={directory}\n')
+          PY
+
       - name: Link Vercel project
-        run: npm exec --yes --package vercel@50.33.1 -- vercel link --yes --project=movecar-saas --scope=fankaiwei3-5665s-projects --token=${{ secrets.VERCEL_TOKEN }}
+        run: npm exec --yes --package vercel@50.33.1 -- vercel link --yes --project="$MOVECAR_DEPLOY_PROJECT" --scope="$MOVECAR_DEPLOY_SCOPE" --global-config "$VERCEL_GLOBAL_CONFIG"
 
       - name: Pull Vercel environment
-        run: npm exec --yes --package vercel@50.33.1 -- vercel pull --yes --environment=production --token=${{ secrets.VERCEL_TOKEN }}
+        run: npm exec --yes --package vercel@50.33.1 -- vercel pull --yes --environment=production --global-config "$VERCEL_GLOBAL_CONFIG"
+
+      - name: Record previous production deployment
+        id: baseline
+        run: |
+          set -euo pipefail
+          npm exec --yes --package vercel@50.33.1 -- vercel inspect "$MOVECAR_DEPLOY_HOST" --json --scope="$MOVECAR_DEPLOY_SCOPE" --global-config "$VERCEL_GLOBAL_CONFIG" > "$VERCEL_GLOBAL_CONFIG/before.json"
+          node --input-type=module <<'JS'
+          import fs from 'node:fs';
+          const deployment = JSON.parse(fs.readFileSync(`${process.env.VERCEL_GLOBAL_CONFIG}/before.json`, 'utf8'));
+          if (typeof deployment.id !== 'string' || !/^dpl_[A-Za-z0-9]+$/.test(deployment.id) ||
+              deployment.name !== process.env.MOVECAR_DEPLOY_PROJECT || deployment.target !== 'production' || deployment.readyState !== 'READY') {
+            throw new Error('A valid production rollback deployment is required');
+          }
+          fs.appendFileSync(process.env.GITHUB_OUTPUT, `deployment_id=${deployment.id}\n`);
+          console.log(`Previous production deployment: ${deployment.id}`);
+          JS
 
       - name: Build
-        run: npm exec --yes --package vercel@50.33.1 -- vercel build --prod --token=${{ secrets.VERCEL_TOKEN }}
+        run: npm exec --yes --package vercel@50.33.1 -- vercel build --prod --global-config "$VERCEL_GLOBAL_CONFIG"
 
       - name: Deploy
-        run: npm exec --yes --package vercel@50.33.1 -- vercel deploy --prebuilt --prod --token=${{ secrets.VERCEL_TOKEN }}
+        id: release
+        run: |
+          set -euo pipefail
+          npm exec --yes --package vercel@50.33.1 -- vercel deploy --prebuilt --prod --meta githubCommitSha="$GITHUB_SHA" --global-config "$VERCEL_GLOBAL_CONFIG" > "$VERCEL_GLOBAL_CONFIG/release-url.txt"
+          node --input-type=module <<'JS'
+          import fs from 'node:fs';
+          const value = fs.readFileSync(`${process.env.VERCEL_GLOBAL_CONFIG}/release-url.txt`, 'utf8').trim();
+          const url = new URL(value);
+          if (url.protocol !== 'https:' || !url.hostname.endsWith('.vercel.app') ||
+              url.username || url.password || url.pathname !== '/' || url.search || url.hash) {
+            throw new Error('Invalid deployment URL');
+          }
+          fs.appendFileSync(process.env.GITHUB_OUTPUT, `url=${url.origin}\n`);
+          console.log(`Published deployment: ${url.origin}`);
+          JS
+
+      - name: Verify production alias points to this release
+        env:
+          RELEASE_URL: ${{ steps.release.outputs.url }}
+        run: |
+          set -euo pipefail
+          npm exec --yes --package vercel@50.33.1 -- vercel inspect "$RELEASE_URL" --json --scope="$MOVECAR_DEPLOY_SCOPE" --global-config "$VERCEL_GLOBAL_CONFIG" > "$VERCEL_GLOBAL_CONFIG/release.json"
+          npm exec --yes --package vercel@50.33.1 -- vercel inspect "$MOVECAR_DEPLOY_HOST" --json --scope="$MOVECAR_DEPLOY_SCOPE" --global-config "$VERCEL_GLOBAL_CONFIG" > "$VERCEL_GLOBAL_CONFIG/alias.json"
+          node --input-type=module <<'JS'
+          import fs from 'node:fs';
+          const read = file => JSON.parse(fs.readFileSync(`${process.env.VERCEL_GLOBAL_CONFIG}/${file}.json`, 'utf8'));
+          const release = read('release');
+          const alias = read('alias');
+          if (release.name !== process.env.MOVECAR_DEPLOY_PROJECT || release.readyState !== 'READY' ||
+              release.target !== 'production' || alias.id !== release.id || alias.readyState !== 'READY') {
+            throw new Error('Production alias does not point to this ready MoveCar release');
+          }
+          console.log(`Production deployment verified: ${release.id}; source commit: ${process.env.GITHUB_SHA}`);
+          JS
+
+      - name: Check production routes and authentication boundaries
+        run: |
+          set -euo pipefail
+          for path in / /zh /login /privacy-policy; do
+            status="$(curl --silent --show-error --location --connect-timeout "$MOVECAR_SMOKE_CONNECT_TIMEOUT_SECONDS" --max-time "$MOVECAR_SMOKE_TIMEOUT_SECONDS" --output /dev/null --write-out '%{http_code}' "https://$MOVECAR_DEPLOY_HOST$path")"
+            echo "$path: $status"
+            test "$status" = 200
+          done
+          status="$(curl --silent --show-error --connect-timeout "$MOVECAR_SMOKE_CONNECT_TIMEOUT_SECONDS" --max-time "$MOVECAR_SMOKE_TIMEOUT_SECONDS" --output /dev/null --write-out '%{http_code}' "https://$MOVECAR_DEPLOY_HOST/api/internal/movecar/tag/deployment-smoke")"
+          echo "Unsigned internal tag request: $status"
+          test "$status" = 401
+          status="$(curl --silent --show-error --connect-timeout "$MOVECAR_SMOKE_CONNECT_TIMEOUT_SECONDS" --max-time "$MOVECAR_SMOKE_TIMEOUT_SECONDS" --output /dev/null --write-out '%{http_code}' --request POST --header 'Content-Type: application/json' --data '{}' "https://$MOVECAR_DEPLOY_HOST/api/payment/paibao/fulfill")"
+          echo "Unsigned payment callback: $status"
+          test "$status" = 401 || test "$status" = 503
+
+      - name: Roll back failed release
+        if: failure() && steps.baseline.outputs.deployment_id != '' && steps.release.outcome != 'skipped'
+        env:
+          PREVIOUS_DEPLOYMENT: ${{ steps.baseline.outputs.deployment_id }}
+        run: |
+          set -euo pipefail
+          npm exec --yes --package vercel@50.33.1 -- vercel rollback "$PREVIOUS_DEPLOYMENT" --yes --scope="$MOVECAR_DEPLOY_SCOPE" --global-config "$VERCEL_GLOBAL_CONFIG"
+          npm exec --yes --package vercel@50.33.1 -- vercel inspect "$MOVECAR_DEPLOY_HOST" --json --scope="$MOVECAR_DEPLOY_SCOPE" --global-config "$VERCEL_GLOBAL_CONFIG" > "$VERCEL_GLOBAL_CONFIG/rollback.json"
+          node --input-type=module <<'JS'
+          import fs from 'node:fs';
+          const deployment = JSON.parse(fs.readFileSync(`${process.env.VERCEL_GLOBAL_CONFIG}/rollback.json`, 'utf8'));
+          if (deployment.id !== process.env.PREVIOUS_DEPLOYMENT) throw new Error('Rollback alias did not restore the previous deployment');
+          console.log(`Rollback verified: ${deployment.id}`);
+          JS
+          curl --fail --silent --show-error --location --connect-timeout "$MOVECAR_SMOKE_CONNECT_TIMEOUT_SECONDS" --max-time "$MOVECAR_SMOKE_TIMEOUT_SECONDS" --output /dev/null "https://$MOVECAR_DEPLOY_HOST/"
+
+      - name: Remove runtime credentials
+        if: always()
+        env:
+          VERCEL_GLOBAL_CONFIG: ${{ runner.temp }}/movecar-vercel-${{ github.run_id }}-${{ github.run_attempt }}
+        run: |
+          if [[ -n "${VERCEL_GLOBAL_CONFIG:-}" ]]; then rm -rf -- "$VERCEL_GLOBAL_CONFIG"; fi
+          rm -f -- .vercel/.env.production.local

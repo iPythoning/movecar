@@ -1,7 +1,6 @@
 import { getErrorMessage } from '@/lib/error-utils';
 import {
   CreemCheckout,
-  CreemCheckoutSessionCreateParams,
   CreemCustomer,
   CreemDiscount,
   CreemFullSubscription,
@@ -107,18 +106,6 @@ export async function retrieveCreemCustomer({
     throw new Error(
       `Failed to retrieve Creem customer ${email} ${customerId}: ${message}`
     );
-  }
-}
-
-export async function createCreemCheckoutSession(params: CreemCheckoutSessionCreateParams): Promise<CreemCheckout> {
-  try {
-    return await creemRequest<CreemCheckout>('/checkouts', {
-      method: 'POST',
-      body: params,
-    });
-  } catch (error) {
-    const message = getErrorMessage(error);
-    throw new Error(`Failed to create Creem checkout session: ${message}`);
   }
 }
 

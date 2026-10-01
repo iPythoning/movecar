@@ -1,4 +1,4 @@
-import { escapeHtml } from '../lib/html'
+import { escapeHtml, scriptJson } from '../lib/html'
 import type { Locale, Messages } from '../lib/i18n'
 import { htmlLang } from '../lib/i18n'
 
@@ -73,8 +73,8 @@ export function renderOwnerConfirmPage(p: OwnerConfirmProps): string {
 
 <script>
 (() => {
-  const TOKEN = ${JSON.stringify(token)};
-  const NOTIF_ID = ${JSON.stringify(notificationId)};
+  const TOKEN = ${scriptJson(token)};
+  const NOTIF_ID = ${scriptJson(notificationId)};
   const chips = document.querySelectorAll('.chip');
   const textarea = document.getElementById('reply');
   const shareLoc = document.getElementById('share-loc');
@@ -120,6 +120,7 @@ export function renderOwnerConfirmPage(p: OwnerConfirmProps): string {
       form.classList.add('hidden');
       doneCard.classList.remove('hidden');
     } catch (err) {
+      console.error('Could not send reply', err);
       submit.disabled = false;
       alert('Failed: ' + (err && err.message || err));
     }

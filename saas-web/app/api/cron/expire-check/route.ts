@@ -1,18 +1,18 @@
 import { db } from '@/lib/db'
 import {
-  movecarTags,
   pricingPlans,
   subscriptions,
 } from '@/lib/db/schema'
-import { and, eq, inArray, lte, sql } from 'drizzle-orm'
+import { and, eq, lte, sql } from 'drizzle-orm'
+import { enforceTagLimit } from '@/lib/movecar/enforce-tag-limit'
+import { withMovecarUserLock } from '@/lib/movecar/user-lock'
 import { NextResponse } from 'next/server'
 
 /**
  * Daily cron to downgrade expired MoveCar subscriptions to Free.
  *
- * For every recurring subscription whose currentPeriodEnd has passed and status
- * is not already canceled/unpaid, we disable all but the most recently created
- * tag (the Free tier only allows 1 active tag).
+ * Recheck each user's current entitlement before limiting active tags. An old
+ * expired subscription must not override a renewal or lifetime purchase.
  *
  * Trigger: Vercel Cron daily at 00:00 UTC
  *   { "path": "/api/cron/expire-check", "schedule": "0 0 * * *" }
@@ -45,8 +45,6 @@ export async function GET(request: Request) {
 
   try {
     // Find expired recurring subscriptions that map to a MoveCar paid plan.
-    // We exclude already-terminal statuses but include past_due/unpaid so they
-    // lose Pro access as soon as the paid period ends.
     const expiredRows = await db
       .select({
         subscriptionId: subscriptions.subscriptionId,
@@ -65,34 +63,12 @@ export async function GET(request: Request) {
 
     let deactivatedTags = 0
 
-    for (const row of expiredRows) {
-      if (!row.userId) continue
-
-      // Keep the most recently created tag active; disable the rest.
-      const userTags = await db
-        .select({ id: movecarTags.id, createdAt: movecarTags.createdAt })
-        .from(movecarTags)
-        .where(eq(movecarTags.userId, row.userId))
-        .orderBy(sql`${movecarTags.createdAt} DESC`)
-
-      const tagsToDisable = userTags.slice(1).map((t) => t.id)
-
-      if (tagsToDisable.length > 0) {
-        await db
-          .update(movecarTags)
-          .set({ isActive: false })
-          .where(
-            and(
-              eq(movecarTags.userId, row.userId),
-              inArray(movecarTags.id, tagsToDisable)
-            )
-          )
-        deactivatedTags += tagsToDisable.length
-      }
-
-      console.log(
-        `[movecar/expire-check] Downgraded user ${row.userId} (sub ${row.subscriptionId}, plan ${row.planType})`
-      )
+    const userIds = [...new Set(expiredRows.map((row) => row.userId).filter(Boolean))]
+    for (const userId of userIds) {
+      if (!userId) continue
+      deactivatedTags += await withMovecarUserLock(userId, async (tx) => {
+        return enforceTagLimit(tx, userId)
+      })
     }
 
     return NextResponse.json({

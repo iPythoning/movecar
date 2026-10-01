@@ -32,10 +32,12 @@ export function handleOwnerConfirmGet(c: Context<{ Bindings: Env }>) {
 
   // Optional: message + location hints from the push URL (from Worker notify)
   const message = c.req.query('m') ?? undefined
-  const lat = Number(c.req.query('lat'))
-  const lng = Number(c.req.query('lng'))
+  const latParam = c.req.query('lat')
+  const lngParam = c.req.query('lng')
+  const lat = latParam === undefined || latParam.trim() === '' ? NaN : Number(latParam)
+  const lng = lngParam === undefined || lngParam.trim() === '' ? NaN : Number(lngParam)
   const requesterLocation =
-    Number.isFinite(lat) && Number.isFinite(lng)
+    Number.isFinite(lat) && Number.isFinite(lng) && Math.abs(lat) <= 90 && Math.abs(lng) <= 180
       ? { lat, lng }
       : undefined
 

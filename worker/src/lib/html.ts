@@ -12,6 +12,12 @@ export function escapeHtml(raw: string): string {
     .replace(/'/g, '&#39;')
 }
 
+export function scriptJson(value: unknown): string {
+  const serialized = JSON.stringify(value)
+  if (serialized === undefined) throw new Error('Value cannot be serialized')
+  return serialized.replace(/</g, '\\u003c').replace(/\u2028/g, '\\u2028').replace(/\u2029/g, '\\u2029')
+}
+
 export function html(content: string, status = 200): Response {
   return new Response(content, {
     status,

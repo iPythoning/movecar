@@ -37,10 +37,13 @@ export async function handleNotify(c: Context<{ Bindings: Env }>) {
     return c.json({ ok: false, error: 'saas_unavailable' }, 502)
   }
 
+  const confirmationUrl = new URL('/owner-confirm', c.req.url)
+  confirmationUrl.searchParams.set('token', saasRes.oneTimeToken)
+  confirmationUrl.searchParams.set('n', saasRes.notificationId)
   const payload: NotifyPayload = {
     title: '🚗 MoveCar',
     body: body.message?.slice(0, 200) || 'Someone is asking you to move your car',
-    url: `${c.env.SAAS_API_URL.replace(/\/$/, '')}/owner-confirm?token=${encodeURIComponent(saasRes.oneTimeToken)}&n=${encodeURIComponent(saasRes.notificationId)}`,
+    url: confirmationUrl.toString(),
     level: 'timeSensitive',
   }
 
