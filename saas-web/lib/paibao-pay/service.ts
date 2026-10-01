@@ -5,10 +5,10 @@ import { db } from '@/lib/db';
 import { resolveMovecarPlan } from '@/lib/movecar/plan';
 import { orders, pricingPlans } from '@/lib/db/schema';
 import {
-  applyFulfillment, Fulfillment, metadataOf, PaymentError, PaymentMetadata,
-  PaymentOrder, reusableCheckout, snapshotPlan,
+  applyFulfillment, centsToMoney, Fulfillment, metadataOf, PaymentError, PaymentMetadata,
+  PaymentOrder, quotePlan, reusableCheckout, snapshotPlan,
 } from './core';
-import { paymentConfig } from './config';
+import { gatewaySelection, paymentConfig, pricingEnvironment } from './config';
 import { createGatewayCheckout, reconcileGatewayOrder } from './gateway';
 
 function publicOrder(order: PaymentOrder) {
@@ -23,7 +23,6 @@ function publicOrder(order: PaymentOrder) {
 }
 
 export async function checkoutPlan(userId: string, buyerEmail: string, planId: string) {
-  const config = paymentConfig();
   const reservation = await db.transaction(async tx => {
     // Commit a pending reservation before the external request. Other processes
     // see this row while the first request is waiting on the gateway.
@@ -31,7 +30,7 @@ export async function checkoutPlan(userId: string, buyerEmail: string, planId: s
     await tx.execute(sql`SELECT pg_advisory_xact_lock(hashtextextended(${`paibao:checkout:${userId}:${planId}`}, 0))`);
     const [plan] = await tx.select().from(pricingPlans).where(eq(pricingPlans.id, planId)).limit(1).for('share');
     if (!plan) throw new PaymentError('plan_not_found', 404, 'Plan not found.');
-    const snapshot = snapshotPlan(plan, config.environment);
+    const quote = quotePlan(plan, pricingEnvironment());
     const [existing] = await tx.select().from(orders).where(and(
       eq(orders.userId, userId), eq(orders.planId, planId), eq(orders.provider, 'paibao'),
       inArray(orders.status, ['pending', 'succeeded']),
@@ -43,23 +42,25 @@ export async function checkoutPlan(userId: string, buyerEmail: string, planId: s
       throw new PaymentError('already_purchased', 409, 'You already own a Lifetime plan.');
     }
     if (existing) {
-      reusableCheckout(existing, snapshot, new Date());
-      return { created: false, order: existing, snapshot };
+      reusableCheckout(existing, quote, new Date());
+      return { created: false as const, order: existing };
     }
+    const config = paymentConfig();
+    const snapshot = snapshotPlan(plan, config.environment, gatewaySelection(config, plan.id));
     const id = randomUUID();
     const metadata: PaymentMetadata = { snapshot, checkoutState: 'creating' };
     const [order] = await tx.insert(orders).values({
       id, userId, provider: 'paibao', providerOrderId: `pending:${id}`,
       orderType: 'one_time_purchase', status: 'pending', planId: plan.id, productId: snapshot.productId,
-      amountSubtotal: (snapshot.amountCents / 100).toFixed(2),
-      amountTotal: (snapshot.amountCents / 100).toFixed(2), currency: snapshot.currency, metadata,
+      amountSubtotal: centsToMoney(snapshot.amountCents),
+      amountTotal: centsToMoney(snapshot.amountCents), currency: snapshot.currency, metadata,
     }).returning();
-    return { created: true, order, snapshot };
+    return { created: true as const, order, snapshot, config };
   });
   if (!reservation.created) return publicOrder(reservation.order);
 
   try {
-    const checkout = await createGatewayCheckout(config, reservation.snapshot, reservation.order.id, buyerEmail);
+    const checkout = await createGatewayCheckout(reservation.config, reservation.snapshot, reservation.order.id, buyerEmail, userId);
     const saved = await db.transaction(async tx => {
       const [order] = await tx.select().from(orders).where(eq(orders.id, reservation.order.id)).limit(1).for('update');
       const meta = metadataOf(order);
@@ -92,7 +93,7 @@ export async function checkoutPlan(userId: string, buyerEmail: string, planId: s
 export async function fulfillPayment(payload: Fulfillment) {
   return db.transaction(async tx => applyFulfillment({
     async lockTransaction(transactionId) {
-      await tx.execute(sql`SELECT pg_advisory_xact_lock(hashtextextended(${`paibao:stripe:transaction:${transactionId}`}, 0))`);
+      await tx.execute(sql`SELECT pg_advisory_xact_lock(hashtextextended(${`paibao:${transactionId}`}, 0))`);
     },
     async lockOrder(id) {
       const [owner] = await tx.select({ userId: orders.userId }).from(orders).where(eq(orders.id, id)).limit(1);
@@ -101,11 +102,21 @@ export async function fulfillPayment(payload: Fulfillment) {
       const [order] = await tx.select().from(orders).where(eq(orders.id, id)).limit(1).for('update');
       return order;
     },
-    async findTransaction(transactionId) {
+    async findTransaction(transactionId, notification) {
       const [order] = await tx.select().from(orders).where(and(
         eq(orders.provider, 'paibao'),
         sql`${orders.metadata}->>'transactionId' = ${transactionId}`,
-        sql`${orders.metadata}->'snapshot'->>'channel' = 'stripe'`,
+        sql`${orders.metadata}->'snapshot'->>'channel' = ${notification.channel}`,
+        notification.channel === 'waffo' ? sql`${orders.metadata}->'snapshot'->>'gatewayEnvironment' = ${notification.mode}` : undefined,
+      )).limit(1);
+      return order;
+    },
+    async findGatewayTransactionOrder(id, notification) {
+      const [order] = await tx.select().from(orders).where(and(
+        eq(orders.provider, 'paibao'),
+        sql`${orders.metadata}->>'gatewayTransactionOrderId' = ${id}`,
+        sql`${orders.metadata}->'snapshot'->>'channel' = 'waffo'`,
+        sql`${orders.metadata}->'snapshot'->>'gatewayEnvironment' = ${notification.mode}`,
       )).limit(1);
       return order;
     },
@@ -126,8 +137,11 @@ export async function getPaymentOrder(userId: string, id: string) {
   )).limit(1);
   if (!order) throw new PaymentError('order_not_found', 404, 'Order not found.');
   const meta = metadataOf(order);
+  // Waffo's current status endpoint fabricates callback amounts from its local
+  // quote. Wait for signed webhook delivery instead of triggering that path.
+  if (meta.snapshot.channel === 'waffo') return publicOrder(order);
   if (order.status === 'pending' && meta.checkoutState === 'ready' && meta.checkout) {
-    const config = paymentConfig();
+    const config = paymentConfig(meta.snapshot);
     const permitted = await db.transaction(async tx => {
       const [current] = await tx.select().from(orders).where(and(
         eq(orders.id, id), eq(orders.userId, userId), eq(orders.provider, 'paibao'),

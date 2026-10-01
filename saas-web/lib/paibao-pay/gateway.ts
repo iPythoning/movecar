@@ -1,4 +1,4 @@
-import { CheckoutSession, PaymentError, PlanSnapshot, record } from './core';
+import { centsToMoney, CheckoutSession, PaymentError, PlanSnapshot, record } from './core';
 import type { PaymentConfig } from './config';
 
 export function returnUrl(base: string, orderId: string): string {
@@ -25,17 +25,27 @@ export function parseCheckoutSession(value: unknown, allowedOrigins: string[], n
   };
 }
 
-export async function createGatewayCheckout(config: PaymentConfig, snapshot: PlanSnapshot, orderId: string, buyerEmail: string): Promise<CheckoutSession> {
-  const response = await fetch(`${config.apiBase}/stripe/checkout-external`, {
+export async function createGatewayCheckout(config: PaymentConfig, snapshot: PlanSnapshot, orderId: string, buyerEmail: string, buyerIdentity: string): Promise<CheckoutSession> {
+  if (config.channel !== snapshot.channel || config.apiBase !== snapshot.gatewayApiBase ||
+      config.gatewayEnvironment !== snapshot.gatewayEnvironment || !buyerIdentity.trim()) {
+    throw new PaymentError('configuration_invalid', 503, 'Payment is temporarily unavailable.');
+  }
+  const common = {
+    ref: orderId, product_id: snapshot.productId, fulfill_url: config.fulfillUrl,
+    currency: snapshot.currency, buyer_email: buyerEmail, success_url: returnUrl(config.successUrl, orderId),
+  };
+  const body = snapshot.channel === 'waffo' ? {
+    ...common, amount: centsToMoney(snapshot.amountCents),
+    tax_category: snapshot.taxCategory, buyer_identity: buyerIdentity, with_trial: false,
+  } : {
+    ...common, amount_cents: snapshot.amountCents, subject: snapshot.title,
+    quantity: 1, mode: 'payment', cancel_url: returnUrl(config.cancelUrl, orderId),
+  };
+  const response = await fetch(`${snapshot.gatewayApiBase}/${snapshot.channel}/checkout-external`, {
     method: 'POST', cache: 'no-store', redirect: 'error',
     headers: { 'Authorization': `Bearer ${config.adminToken}`, 'Content-Type': 'application/json' },
     signal: AbortSignal.timeout(config.timeoutMs),
-    body: JSON.stringify({
-      ref: orderId, product_id: snapshot.productId, fulfill_url: config.fulfillUrl,
-      amount_cents: snapshot.amountCents, currency: snapshot.currency, subject: snapshot.title,
-      quantity: 1, mode: 'payment', buyer_email: buyerEmail,
-      success_url: returnUrl(config.successUrl, orderId), cancel_url: returnUrl(config.cancelUrl, orderId),
-    }),
+    body: JSON.stringify(body),
   });
   // Any non-confirmed result is ambiguous: even a 5xx may follow a successful
   // downstream session creation. The caller retains the local pending order.
@@ -44,6 +54,11 @@ export async function createGatewayCheckout(config: PaymentConfig, snapshot: Pla
 }
 
 export async function reconcileGatewayOrder(config: PaymentConfig, gatewayOrderId: string): Promise<'pending' | 'paid' | 'fulfilled' | 'expired'> {
+  // The current Waffo status endpoint creates a signed fulfillment using the
+  // local quote rather than independently reported payment amounts.
+  if (config.channel === 'waffo') {
+    throw new PaymentError('reconciliation_unsupported', 409, 'Payment confirmation is still pending. Please check again later.');
+  }
   const response = await fetch(`${config.apiBase}/order/${encodeURIComponent(gatewayOrderId)}/status`, {
     method: 'GET', cache: 'no-store', redirect: 'error',
     headers: { 'Authorization': `Bearer ${config.adminToken}` }, signal: AbortSignal.timeout(config.timeoutMs),
