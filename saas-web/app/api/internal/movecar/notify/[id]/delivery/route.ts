@@ -5,7 +5,7 @@ import { db } from '@/lib/db'
 import { movecarNotifications } from '@/lib/db/schema'
 import { getErrorMessage } from '@/lib/error-utils'
 import { verifyInternalRequest } from '@/lib/movecar/internal-auth'
-import { eq } from 'drizzle-orm'
+import { eq, sql } from 'drizzle-orm'
 
 export const runtime = 'nodejs'
 
@@ -47,7 +47,7 @@ export async function PATCH(
     const updated = await db
       .update(movecarNotifications)
       .set({
-        status,
+        status: sql`CASE WHEN ${movecarNotifications.repliedAt} IS NOT NULL THEN 'replied' ELSE ${status} END`,
         channelsSent: parsed.channelsSent,
       })
       .where(eq(movecarNotifications.id, id))

@@ -33,14 +33,12 @@ interface TelegramUpdate {
 }
 
 export async function POST(request: Request) {
-  // Optional secret-token validation
-  if (TELEGRAM_WEBHOOK_SECRET) {
-    const secretHeader = request.headers.get('x-telegram-bot-api-secret-token')
-    const url = new URL(request.url)
-    const secretQuery = url.searchParams.get('secret')
-    if (secretHeader !== TELEGRAM_WEBHOOK_SECRET && secretQuery !== TELEGRAM_WEBHOOK_SECRET) {
-      return NextResponse.json({ ok: false }, { status: 401 })
-    }
+  if (!TELEGRAM_WEBHOOK_SECRET) {
+    console.error('[movecar/telegram-webhook] Authentication is not configured')
+    return NextResponse.json({ ok: false }, { status: 503 })
+  }
+  if (request.headers.get('x-telegram-bot-api-secret-token') !== TELEGRAM_WEBHOOK_SECRET) {
+    return NextResponse.json({ ok: false }, { status: 401 })
   }
 
   if (!redis) {

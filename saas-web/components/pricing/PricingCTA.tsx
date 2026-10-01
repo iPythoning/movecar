@@ -26,6 +26,10 @@ export default function PricingCTA({ plan, localizedPlan }: Params) {
   const isStripe = provider === "stripe";
 
   const handleCheckout = async (applyCoupon = true) => {
+    if (provider === "none" && Number(plan.price) === 0) {
+      router.push("/dashboard/movecar/tags/new");
+      return;
+    }
     const stripePriceId = plan.stripePriceId ?? null;
     if (isStripe && !stripePriceId) {
       toast.error("Stripe price ID is missing for this plan.");
@@ -50,7 +54,7 @@ export default function PricingCTA({ plan, localizedPlan }: Params) {
         // Creem
         creemProductId?: string;
       } = {
-        provider: provider || "stripe",
+        provider: provider ?? "none",
       };
 
       if (isStripe) {
