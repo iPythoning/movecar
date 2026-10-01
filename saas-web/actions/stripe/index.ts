@@ -8,178 +8,19 @@ import { FraudWarningAdminEmail } from '@/emails/fraud-warning-admin';
 import { InvoicePaymentFailedEmail } from '@/emails/invoice-payment-failed';
 import { getSession } from '@/lib/auth/server';
 import { db } from '@/lib/db';
+import { withMovecarUserLock } from '@/lib/movecar/user-lock';
 import {
   pricingPlans as pricingPlansSchema,
   subscriptions as subscriptionsSchema,
   user as userSchema,
 } from '@/lib/db/schema';
 import { getErrorMessage } from '@/lib/error-utils';
-import { isRecurringPaymentType } from '@/lib/payments/provider-utils';
 import { stripe } from '@/lib/stripe';
 import { getURL } from '@/lib/url';
 import { eq, InferInsertModel } from 'drizzle-orm';
 import { headers } from 'next/headers';
 import { redirect } from 'next/navigation';
 import Stripe from 'stripe';
-
-export async function getOrCreateStripeCustomer(
-  userId: string
-): Promise<string> {
-
-  const userData = await db
-    .select({
-      stripeCustomerId: userSchema.stripeCustomerId,
-      email: userSchema.email,
-    })
-    .from(userSchema)
-    .where(eq(userSchema.id, userId))
-    .limit(1);
-  const userProfile = userData[0];
-
-  if (!userProfile) {
-    throw new Error(`Could not fetch user profile for ${userId}`);
-  }
-
-  if (!stripe) {
-    console.error('Stripe is not initialized. Please check your environment variables.');
-    throw new Error(`Stripe is not initialized. Please check your environment variables.`);
-  }
-
-  if (userProfile?.stripeCustomerId) {
-    const customer = await stripe.customers.retrieve(userProfile.stripeCustomerId);
-    if (customer && !customer.deleted) {
-      return userProfile.stripeCustomerId;
-    }
-  }
-
-  const userEmail = userProfile?.email
-  if (!userEmail) {
-    throw new Error(`Could not retrieve email for user ${userId}`);
-  }
-
-  try {
-    const customer = await stripe.customers.create({
-      email: userEmail,
-      metadata: {
-        userId: userId,
-      },
-    });
-
-    try {
-      await db
-        .update(userSchema)
-        .set({ stripeCustomerId: customer.id })
-        .where(eq(userSchema.id, userId));
-    } catch (updateError) {
-      console.error('Error updating user profile with Stripe customer ID:', updateError);
-      // cleanup in Stripe if this fails critically
-      await stripe.customers.del(customer.id);
-      throw new Error(`Failed to update user ${userId} with Stripe customer ID ${customer.id}`);
-    }
-
-    return customer.id;
-  } catch (error) {
-    console.error('Error creating Stripe customer or updating database:', error);
-    const errorMessage = getErrorMessage(error);
-    throw new Error(`Stripe customer creation/update failed: ${errorMessage}`);
-  }
-}
-
-export async function createStripeCheckoutSession(params: {
-  userId: string;
-  priceId: string;
-  couponCode?: string;
-  referral?: string;
-}): Promise<{ sessionId: string; url?: string }> {
-  const { userId, priceId, couponCode, referral } = params;
-
-  const customerId = await getOrCreateStripeCustomer(userId);
-
-  const results = await db
-    .select({
-      id: pricingPlansSchema.id,
-      cardTitle: pricingPlansSchema.cardTitle,
-      paymentType: pricingPlansSchema.paymentType,
-      trialPeriodDays: pricingPlansSchema.trialPeriodDays,
-    })
-    .from(pricingPlansSchema)
-    .where(eq(pricingPlansSchema.stripePriceId, priceId))
-    .limit(1);
-
-  const plan = results[0];
-
-  if (!plan) {
-    console.error(`Plan not found for priceId ${priceId}`);
-    throw new Error(`Plan not found for priceId ${priceId}`);
-  }
-
-  const isSubscription = isRecurringPaymentType(plan.paymentType);
-  const mode: Stripe.Checkout.SessionCreateParams.Mode = isSubscription
-    ? 'subscription'
-    : 'payment';
-
-  const sessionParams: Stripe.Checkout.SessionCreateParams = {
-    customer: customerId,
-    line_items: [
-      {
-        price: priceId,
-        quantity: 1,
-      },
-    ],
-    mode,
-    success_url: getURL(
-      `payment/success?session_id={CHECKOUT_SESSION_ID}&provider=stripe`
-    ),
-    cancel_url: getURL(process.env.NEXT_PUBLIC_PRICING_PATH!),
-    metadata: {
-      userId,
-      planId: plan.id,
-      planName: plan.cardTitle,
-      priceId,
-      ...(referral && { tolt_referral: referral }),
-    },
-  };
-
-  if (couponCode) {
-    sessionParams.discounts = [{ coupon: couponCode }];
-  } else {
-    sessionParams.allow_promotion_codes = true;
-  }
-
-  if (isSubscription) {
-    sessionParams.subscription_data = {
-      trial_period_days: plan.trialPeriodDays ?? undefined,
-      metadata: {
-        userId,
-        planId: plan.id,
-        planName: plan.cardTitle,
-        priceId,
-      },
-    };
-  } else {
-    sessionParams.payment_intent_data = {
-      metadata: {
-        userId,
-        planId: plan.id,
-        planName: plan.cardTitle,
-        priceId,
-      },
-    };
-  }
-
-  if (!stripe) {
-    throw new Error(
-      'Stripe is not initialized. Please check your environment variables.'
-    );
-  }
-
-  const session = await stripe.checkout.sessions.create(sessionParams);
-  if (!session.id) {
-    throw new Error('Stripe session creation failed (missing session ID)');
-  }
-
-  return { sessionId: session.id, url: session.url ?? undefined };
-}
 
 export async function createStripePortalSession(): Promise<void> {
   const session = await getSession()
@@ -344,13 +185,15 @@ export async function syncSubscriptionData(
     };
 
     const { ...updateData } = subscriptionData;
-    await db
-      .insert(subscriptionsSchema)
-      .values(subscriptionData)
-      .onConflictDoUpdate({
-        target: subscriptionsSchema.subscriptionId,
-        set: updateData,
-      });
+    await withMovecarUserLock(userId, async (tx) => {
+      await tx
+        .insert(subscriptionsSchema)
+        .values(subscriptionData)
+        .onConflictDoUpdate({
+          target: subscriptionsSchema.subscriptionId,
+          set: updateData,
+        });
+    });
 
 
   } catch (error) {
@@ -669,4 +512,3 @@ export async function sendFraudRefundUserEmail({
     console.error(`Failed to send fraud refund user email for charge ${charge.id}:`, emailError);
   }
 }
-

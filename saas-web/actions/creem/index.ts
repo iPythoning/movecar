@@ -3,6 +3,7 @@ import {
   retrieveCreemSubscription
 } from '@/lib/creem/client';
 import { db } from '@/lib/db';
+import { withMovecarUserLock } from '@/lib/movecar/user-lock';
 import {
   pricingPlans as pricingPlansSchema,
   subscriptions as subscriptionsSchema
@@ -82,13 +83,14 @@ export async function syncCreemSubscriptionData(
   };
 
   const { ...updateData } = subscriptionData;
-
-  await db
-    .insert(subscriptionsSchema)
-    .values(subscriptionData)
-    .onConflictDoUpdate({
-      target: subscriptionsSchema.subscriptionId,
-      set: updateData,
-    });
+  if (!userId) throw new Error('Subscription user is missing');
+  await withMovecarUserLock(userId, async (tx) => {
+    await tx
+      .insert(subscriptionsSchema)
+      .values(subscriptionData)
+      .onConflictDoUpdate({
+        target: subscriptionsSchema.subscriptionId,
+        set: updateData,
+      });
+  });
 }
-

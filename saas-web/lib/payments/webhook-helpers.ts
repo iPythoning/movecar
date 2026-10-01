@@ -12,6 +12,8 @@
  */
 
 import { db } from '@/lib/db';
+import { withMovecarUserLock } from '@/lib/movecar/user-lock';
+import { enforceTagLimit } from '@/lib/movecar/enforce-tag-limit';
 import { orders as ordersSchema, PaymentProvider } from '@/lib/db/schema';
 import { ORDER_TYPES } from '@/lib/payments/provider-utils';
 import type {
@@ -73,35 +75,37 @@ export async function createOrderWithIdempotency(
   orderData: OrderInsertData,
   idempotencyKey: string
 ): Promise<CreateOrderResult> {
-  // Idempotency check
-  const existingOrder = await db
-    .select({ id: ordersSchema.id })
-    .from(ordersSchema)
-    .where(
-      and(
-        eq(ordersSchema.provider, provider),
-        eq(ordersSchema.providerOrderId, idempotencyKey)
+  return withMovecarUserLock(orderData.userId, async (tx) => {
+    // Idempotency check
+    const existingOrder = await tx
+      .select({ id: ordersSchema.id })
+      .from(ordersSchema)
+      .where(
+        and(
+          eq(ordersSchema.provider, provider),
+          eq(ordersSchema.providerOrderId, idempotencyKey)
+        )
       )
-    )
-    .limit(1);
+      .limit(1);
 
-  if (existingOrder.length > 0) {
+    if (existingOrder.length > 0) {
+      return {
+        order: existingOrder[0],
+        existed: true,
+      };
+    }
+
+    // Create new order
+    const [insertedOrder] = await tx
+      .insert(ordersSchema)
+      .values(orderData)
+      .returning({ id: ordersSchema.id });
+
     return {
-      order: existingOrder[0],
-      existed: true,
+      order: insertedOrder || null,
+      existed: false,
     };
-  }
-
-  // Create new order
-  const [insertedOrder] = await db
-    .insert(ordersSchema)
-    .values(orderData)
-    .returning({ id: ordersSchema.id });
-
-  return {
-    order: insertedOrder || null,
-    existed: false,
-  };
+  });
 }
 
 /**
@@ -154,10 +158,16 @@ export async function updateOrderStatusAfterRefund(
   const REFUND_TOLERANCE_CENTS = 1; // 1 cent tolerance
   const isFullRefund = Math.abs(Math.abs(refundedAmount) - originalAmount) <= REFUND_TOLERANCE_CENTS;
 
-  await db
-    .update(ordersSchema)
-    .set({ status: isFullRefund ? 'refunded' : 'partially_refunded' })
-    .where(eq(ordersSchema.id, orderId));
+  const [order] = await db.select({ userId: ordersSchema.userId }).from(ordersSchema)
+    .where(eq(ordersSchema.id, orderId)).limit(1);
+  if (!order) throw new Error('Refund order is missing');
+  await withMovecarUserLock(order.userId, async (tx) => {
+    await tx
+      .update(ordersSchema)
+      .set({ status: isFullRefund ? 'refunded' : 'partially_refunded' })
+      .where(eq(ordersSchema.id, orderId));
+    await enforceTagLimit(tx, order.userId);
+  });
 }
 
 /**

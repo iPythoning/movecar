@@ -6,6 +6,7 @@ import { db } from '@/lib/db'
 import { movecarTags } from '@/lib/db/schema'
 import { getErrorMessage } from '@/lib/error-utils'
 import { resolveMovecarPlan } from '@/lib/movecar/plan'
+import { withMovecarUserLock, type MovecarTransaction } from '@/lib/movecar/user-lock'
 import {
   SHORT_CODE_MAX_RETRIES,
   generateShortCode,
@@ -16,7 +17,7 @@ import {
   type CreateTagInput,
   type UpdateTagInput,
 } from '@/lib/movecar/validations'
-import { and, desc, eq } from 'drizzle-orm'
+import { and, desc, eq, ne } from 'drizzle-orm'
 
 export type MovecarTag = typeof movecarTags.$inferSelect
 
@@ -79,46 +80,59 @@ export async function createTagAction(
     return actionResponse.badRequest(parsed.error.issues[0]?.message ?? 'invalid input')
   }
 
-  const plan = await resolveMovecarPlan(user.id)
-  if (plan.maxTags !== -1) {
-    const existing = await db
-      .select({ id: movecarTags.id })
-      .from(movecarTags)
-      .where(eq(movecarTags.userId, user.id))
-    if (existing.length >= plan.maxTags) {
-      return actionResponse.forbidden(
-        `Tag limit reached (${plan.maxTags}). Upgrade your plan to create more.`,
-        'PLAN_TAG_LIMIT'
-      )
-    }
-  }
-
-  for (let attempt = 0; attempt < SHORT_CODE_MAX_RETRIES; attempt++) {
-    const shortCode = generateShortCode()
-    try {
-      const [row] = await db
-        .insert(movecarTags)
-        .values({
-          userId: user.id,
-          shortCode,
-          plateNumber: parsed.data.plateNumber,
-          vehicleModel: parsed.data.vehicleModel,
-          templateId: parsed.data.templateId,
-          settings: parsed.data.settings,
-        })
-        .returning()
-      if (!row) throw new Error('no row returned on insert')
-      return actionResponse.success({ tag: row })
-    } catch (error) {
-      const msg = getErrorMessage(error)
-      if (msg.includes('movecar_tags_short_code') && attempt < SHORT_CODE_MAX_RETRIES - 1) {
-        continue
+  try {
+    return await withMovecarUserLock(user.id, async (tx) => {
+      const plan = await resolveMovecarPlan(user.id, tx)
+      if (plan.maxTags !== -1) {
+        const existing = await tx
+          .select({ id: movecarTags.id })
+          .from(movecarTags)
+          .where(eq(movecarTags.userId, user.id))
+        if (existing.length >= plan.maxTags) return tagLimit(plan.maxTags)
       }
-      console.error('[movecar] createTag failed:', error)
-      return actionResponse.error(msg)
-    }
+
+      for (let attempt = 0; attempt < SHORT_CODE_MAX_RETRIES; attempt++) {
+        const [row] = await tx
+          .insert(movecarTags)
+          .values({
+            userId: user.id,
+            shortCode: generateShortCode(),
+            plateNumber: parsed.data.plateNumber,
+            vehicleModel: parsed.data.vehicleModel,
+            templateId: parsed.data.templateId,
+            settings: parsed.data.settings,
+          })
+          .onConflictDoNothing({ target: movecarTags.shortCode })
+          .returning()
+        if (row) return actionResponse.success({ tag: row })
+      }
+      return actionResponse.error('could not allocate a unique short code')
+    })
+  } catch (error) {
+    console.error('[movecar] createTag failed:', error)
+    return actionResponse.error(getErrorMessage(error))
   }
-  return actionResponse.error('could not allocate a unique short code')
+}
+
+function tagLimit(maxTags: number): ActionResult<{ tag: MovecarTag }> {
+  return actionResponse.forbidden(
+    `Tag limit reached (${maxTags}). Upgrade your plan to create more.`,
+    'PLAN_TAG_LIMIT'
+  )
+}
+
+async function activationLimit(tx: MovecarTransaction, userId: string, tagId: string) {
+  const plan = await resolveMovecarPlan(userId, tx)
+  if (plan.maxTags === -1) return null
+  const activeTags = await tx
+    .select({ id: movecarTags.id })
+    .from(movecarTags)
+    .where(and(
+      eq(movecarTags.userId, userId),
+      eq(movecarTags.isActive, true),
+      ne(movecarTags.id, tagId)
+    ))
+  return activeTags.length >= plan.maxTags ? tagLimit(plan.maxTags) : null
 }
 
 export async function updateTagAction(
@@ -135,23 +149,32 @@ export async function updateTagAction(
   }
 
   try {
-    const [row] = await db
-      .update(movecarTags)
-      .set({
-        ...(parsed.data.plateNumber !== undefined && {
-          plateNumber: parsed.data.plateNumber,
-        }),
-        ...(parsed.data.vehicleModel !== undefined && {
-          vehicleModel: parsed.data.vehicleModel,
-        }),
-        ...(parsed.data.templateId && { templateId: parsed.data.templateId }),
-        ...(parsed.data.settings !== undefined && { settings: parsed.data.settings }),
-        ...(parsed.data.isActive !== undefined && { isActive: parsed.data.isActive }),
-      })
-      .where(and(eq(movecarTags.id, id), eq(movecarTags.userId, user.id)))
-      .returning()
-    if (!row) return actionResponse.notFound()
-    return actionResponse.success({ tag: row })
+    return await withMovecarUserLock(user.id, async (tx) => {
+      const [current] = await tx.select({ id: movecarTags.id }).from(movecarTags)
+        .where(and(eq(movecarTags.id, id), eq(movecarTags.userId, user.id))).limit(1)
+      if (!current) return actionResponse.notFound()
+      if (parsed.data.isActive === true) {
+        const limit = await activationLimit(tx, user.id, id)
+        if (limit) return limit
+      }
+      const [row] = await tx
+        .update(movecarTags)
+        .set({
+          ...(parsed.data.plateNumber !== undefined && {
+            plateNumber: parsed.data.plateNumber,
+          }),
+          ...(parsed.data.vehicleModel !== undefined && {
+            vehicleModel: parsed.data.vehicleModel,
+          }),
+          ...(parsed.data.templateId && { templateId: parsed.data.templateId }),
+          ...(parsed.data.settings !== undefined && { settings: parsed.data.settings }),
+          ...(parsed.data.isActive !== undefined && { isActive: parsed.data.isActive }),
+        })
+        .where(and(eq(movecarTags.id, id), eq(movecarTags.userId, user.id)))
+        .returning()
+      if (!row) return actionResponse.notFound()
+      return actionResponse.success({ tag: row })
+    })
   } catch (error) {
     console.error('[movecar] updateTag failed:', error)
     return actionResponse.error(getErrorMessage(error))
@@ -165,21 +188,27 @@ export async function toggleTagActiveAction(
   if (!user) return actionResponse.unauthorized()
 
   try {
-    const current = await db
-      .select({ isActive: movecarTags.isActive })
-      .from(movecarTags)
-      .where(and(eq(movecarTags.id, id), eq(movecarTags.userId, user.id)))
-      .limit(1)
-    const prev = current[0]
-    if (!prev) return actionResponse.notFound()
+    return await withMovecarUserLock(user.id, async (tx) => {
+      const current = await tx
+        .select({ isActive: movecarTags.isActive })
+        .from(movecarTags)
+        .where(and(eq(movecarTags.id, id), eq(movecarTags.userId, user.id)))
+        .limit(1)
+      const prev = current[0]
+      if (!prev) return actionResponse.notFound()
+      if (!prev.isActive) {
+        const limit = await activationLimit(tx, user.id, id)
+        if (limit) return limit
+      }
 
-    const [row] = await db
-      .update(movecarTags)
-      .set({ isActive: !prev.isActive })
-      .where(and(eq(movecarTags.id, id), eq(movecarTags.userId, user.id)))
-      .returning()
-    if (!row) return actionResponse.notFound()
-    return actionResponse.success({ tag: row })
+      const [row] = await tx
+        .update(movecarTags)
+        .set({ isActive: !prev.isActive })
+        .where(and(eq(movecarTags.id, id), eq(movecarTags.userId, user.id)))
+        .returning()
+      if (!row) return actionResponse.notFound()
+      return actionResponse.success({ tag: row })
+    })
   } catch (error) {
     console.error('[movecar] toggleTagActive failed:', error)
     return actionResponse.error(getErrorMessage(error))

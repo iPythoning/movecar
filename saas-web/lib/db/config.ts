@@ -121,7 +121,7 @@ export function createDatabaseConfig(config: DBConfig) {
       date: true,
     },
 
-    debug: config.debug ?? (process.env.NODE_ENV === 'development'),
+    debug: config.debug === true,
     onnotice: process.env.NODE_ENV === 'development' ? console.log : undefined,
   };
 

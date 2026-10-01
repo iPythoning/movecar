@@ -89,13 +89,14 @@ function parsePlanType(value: unknown): MovecarPlanType | null {
  * Returns the highest entitlement found, or Free if none.
  */
 export async function resolveMovecarPlan(
-  userId: string
+  userId: string,
+  query: Pick<typeof db, 'select'> = db
 ): Promise<MovecarPlanEntitlements> {
   const now = new Date()
 
   // Active subscriptions: status active/trialing and not past currentPeriodEnd,
   // or past_due but still within current period (grace).
-  const activeSubs = await db
+  const activeSubs = await query
     .select({
       planType: movecarPlanTypeSql,
     })
@@ -123,7 +124,7 @@ export async function resolveMovecarPlan(
     .orderBy(desc(subscriptions.currentPeriodEnd))
 
   // One-time purchases (e.g. lifetime) recorded as orders.
-  const oneTimeOrders = await db
+  const oneTimeOrders = await query
     .select({
       planType: movecarPlanTypeSql,
     })
