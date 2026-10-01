@@ -1,6 +1,5 @@
 'use client'
 
-import { useRouter } from 'next/navigation'
 import { useTranslations } from 'next-intl'
 import { useState, useTransition } from 'react'
 import { toast } from 'sonner'
@@ -9,6 +8,7 @@ import { createTagAction, updateTagAction, type MovecarTag } from '@/actions/mov
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import { useRouter } from '@/i18n/routing'
 import {
   Select,
   SelectContent,
@@ -44,7 +44,7 @@ export function TagForm({ initial }: Props) {
         plateNumber: plateNumber.trim() || undefined,
         vehicleModel: vehicleModel.trim() || undefined,
         templateId,
-        settings: { delaySeconds: Number(delaySeconds) || 30 },
+        settings: { delaySeconds: Number(delaySeconds) },
       }
       const res = initial
         ? await updateTagAction(initial.id, payload)
@@ -52,7 +52,6 @@ export function TagForm({ initial }: Props) {
       if (!res.success) { toast.error(res.error); return }
       toast.success('saved')
       router.push('/dashboard/movecar/tags')
-      router.refresh()
     })
   }
 
