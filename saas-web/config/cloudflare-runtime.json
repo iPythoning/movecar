@@ -1,0 +1,22 @@
+{
+  "requiredSecrets": [
+    "DATABASE_URL",
+    "BETTER_AUTH_SECRET",
+    "WORKER_SECRET",
+    "CRON_SECRET",
+    "PAIBAO_FULFILL_HMAC_SECRET",
+    "RESEND_API_KEY",
+    "ADMIN_EMAIL"
+  ],
+  "authSecretMinLength": 32,
+  "databaseBinding": "HYPERDRIVE",
+  "hyperdrive": {
+    "name": "movecar-saas-db",
+    "caName": "movecar-supabase-root-2021",
+    "caFingerprint": "807025ad50d4ed219d2c9c7d299c004f824eb00cf7f65afef607d07b72e6cafa",
+    "directPort": 5432,
+    "originConnectionLimit": 5,
+    "sslmode": "verify-full",
+    "cachingDisabled": true
+  }
+}

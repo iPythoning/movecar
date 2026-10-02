@@ -4,6 +4,8 @@ import MagicLinkEmail from '@/emails/magic-link-email';
 import OTPCodeEmail from '@/emails/otp-code-email';
 import { UserWelcomeEmail } from "@/emails/user-welcome";
 import { db } from "@/lib/db";
+import { getDatabaseRequestScope } from "@/lib/db/request";
+import cloudflareRuntime from '@/config/cloudflare-runtime.json';
 import { account, session, user, verification } from "@/lib/db/schema";
 import {
   buildUserSourceData,
@@ -19,10 +21,18 @@ import { nextCookies } from "better-auth/next-js";
 import { admin, captcha, emailOTP, lastLoginMethod, magicLink, oneTap } from "better-auth/plugins";
 import { cookies } from "next/headers";
 
-export const auth = betterAuth({
+function createAuth() {
+  const scope = getDatabaseRequestScope();
+  if (scope) {
+    const secret = scope.env.BETTER_AUTH_SECRET;
+    if (typeof secret !== 'string' || secret.trim().length < cloudflareRuntime.authSecretMinLength) {
+      throw new Error('Cloudflare authentication requires its runtime secret');
+    }
+  }
+  return betterAuth({
   appName: siteConfig.name,
   baseURL: process.env.NEXT_PUBLIC_BETTER_AUTH_URL || process.env.NEXT_PUBLIC_SITE_URL,
-  secret: process.env.BETTER_AUTH_SECRET,
+  secret: scope ? scope.env.BETTER_AUTH_SECRET as string : process.env.BETTER_AUTH_SECRET,
   advanced: {
     database: {
       generateId: () => crypto.randomUUID(),
@@ -185,4 +195,29 @@ export const auth = betterAuth({
     admin(),
     nextCookies()
   ]
+});
+}
+
+type Auth = ReturnType<typeof createAuth>;
+let nodeAuth: Auth | undefined;
+
+export function getAuth(): Auth {
+  const scope = getDatabaseRequestScope();
+  if (scope) {
+    scope.auth ??= createAuth();
+    return scope.auth as Auth;
+  }
+  if (process.env.MOVECAR_RUNTIME === "cloudflare") {
+    throw new Error("Cloudflare authentication requires a request scope");
+  }
+  nodeAuth ??= createAuth();
+  return nodeAuth;
+}
+
+export const auth: Auth = new Proxy({} as Auth, {
+  get(_target, property) {
+    const instance = getAuth();
+    const value = Reflect.get(instance, property, instance);
+    return typeof value === "function" ? value.bind(instance) : value;
+  },
 });

@@ -2,6 +2,7 @@ import nextVitals from "eslint-config-next/core-web-vitals";
 
 const config = [
   ...nextVitals,
+  { ignores: [".open-next/**", "public/sw.js*", "public/workbox-*.js*"] },
   {
     rules: {
       "react-hooks/exhaustive-deps":

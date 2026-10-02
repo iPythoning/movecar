@@ -7,7 +7,7 @@
   },
   "scripts": {
     "dev": "next dev",
-    "build": "next build",
+    "build": "node scripts/build-local-content.mjs && next build --webpack",
     "start": "next start",
     "typecheck": "tsc --noEmit",
     "lint": "eslint .",
@@ -21,7 +21,11 @@
     "db:push": "drizzle-kit push",
     "db:studio": "drizzle-kit studio",
     "db:seed": "tsx lib/db/seed/index.ts",
-    "db:export-pricing": "tsx lib/db/seed/export.ts"
+    "db:export-pricing": "tsx lib/db/seed/export.ts",
+    "cf:build": "opennextjs-cloudflare build",
+    "cf:preview": "opennextjs-cloudflare preview",
+    "cf:deploy": "opennextjs-cloudflare deploy",
+    "cf:typegen": "wrangler types --env-interface CloudflareEnv cloudflare-env.d.ts"
   },
   "dependencies": {
     "@ai-sdk/anthropic": "^3.0.45",
@@ -47,8 +51,8 @@
     "@marsidev/react-turnstile": "^1.1.0",
     "@microsoft/clarity": "^1.0.2",
     "@neondatabase/serverless": "^1.0.1",
-    "@next/bundle-analyzer": "^16.1.1",
-    "@next/env": "^16.1.1",
+    "@next/bundle-analyzer": "16.3.8",
+    "@next/env": "16.3.8",
     "@openrouter/ai-sdk-provider": "^2.2.3",
     "@opentelemetry/api": "^1.9.0",
     "@opentelemetry/core": "^2.9.0",
@@ -116,7 +120,6 @@
     "@types/js-cookie": "^3.0.6",
     "@upstash/ratelimit": "^2.0.5",
     "@upstash/redis": "^1.34.5",
-    "@vercel/analytics": "^1.4.1",
     "accept-language-parser": "^1.5.0",
     "ai": "^6.0.89",
     "axios": "^1.7.9",
@@ -142,7 +145,7 @@
     "lowlight": "^3.3.0",
     "lucide-react": "^0.548.0",
     "motion": "^12.23.6",
-    "next": "16.1.1",
+    "next": "16.3.8",
     "next-intl": "^4.5.8",
     "next-mdx-remote-client": "^2.1.1",
     "next-themes": "^0.4.6",
@@ -176,7 +179,12 @@
     "use-debounce": "^10.0.4",
     "vaul": "^1.1.2",
     "zod": "^3.24.2",
-    "zustand": "^5.0.3"
+    "zustand": "^5.0.3",
+    "@opennextjs/cloudflare": "1.20.7",
+    "@next/mdx": "16.3.8",
+    "@mdx-js/loader": "3.1.1",
+    "@mdx-js/react": "3.1.1",
+    "remark-frontmatter": "5.0.0"
   },
   "devDependencies": {
     "@eslint/eslintrc": "^3.3.6",
@@ -187,12 +195,14 @@
     "@types/react-dom": "^19.2.3",
     "drizzle-kit": "^0.31.4",
     "eslint": "^9",
-    "eslint-config-next": "16.0.7",
+    "eslint-config-next": "16.3.8",
     "pino-pretty": "^13.1.3",
     "postcss": "^8.4.38",
     "prettier": "^3.6.2",
     "tailwindcss": "^4.1.16",
     "tsx": "^4.20.5",
-    "typescript": "^5"
+    "typescript": "^5",
+    "@types/mdx": "2.0.13",
+    "wrangler": "4.146.0"
   }
 }

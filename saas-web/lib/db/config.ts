@@ -1,5 +1,5 @@
-import { drizzle } from 'drizzle-orm/postgres-js';
-import postgres from 'postgres';
+import { drizzle } from 'drizzle-orm/node-postgres';
+import { Client, Pool, type ClientConfig } from 'pg';
 import * as schema from './schema';
 
 interface DBConfig {
@@ -8,6 +8,11 @@ interface DBConfig {
   enablePrepare?: boolean;
   enableSSL?: boolean | 'require';
   debug?: boolean;
+  connectTimeout?: number;
+  idleTimeout?: number;
+  maxLifetime?: number;
+  hyperdrive?: boolean;
+  queryTimeout?: number;
 }
 
 // detect deployment platform
@@ -115,6 +120,9 @@ export function createDatabaseConfig(config: DBConfig) {
     ...(config.maxConnections && { max: config.maxConnections }),
     ...(config.enablePrepare !== undefined && { prepare: config.enablePrepare }),
     ...(config.enableSSL !== undefined && { ssl: config.enableSSL }),
+    ...(config.connectTimeout !== undefined && { connect_timeout: config.connectTimeout }),
+    ...(config.idleTimeout !== undefined && { idle_timeout: config.idleTimeout }),
+    ...(config.maxLifetime !== undefined && { max_lifetime: config.maxLifetime }),
 
     transform: {
       undefined: null,
@@ -128,19 +136,56 @@ export function createDatabaseConfig(config: DBConfig) {
   return finalConfig;
 }
 
-// create database connection
+// Hyperdrive supports Drizzle through node-postgres; sockets stay request-scoped.
 export function createDatabase(config: DBConfig) {
-  const connectionConfig = createDatabaseConfig(config);
-  const client = postgres(config.connectionString, connectionConfig);
-
-  // console.log(`🚀 Database initialized:`);
-  // console.log(`   Platform: ${detectPlatform()}`);
-  // console.log(`   Database: ${detectDatabase(config.connectionString)}`);
-  // console.log(`   Max connections: ${connectionConfig.max}`);
-  // console.log(`   Prepare statements: ${connectionConfig.prepare}`);
-  // console.log(`   SSL: ${connectionConfig.ssl}`);
-
-  return drizzle(client, { schema });
+  const options = createDatabaseConfig(config);
+  const clients = new Set<Client>();
+  class RequestClient extends Client {
+    constructor(options?: ClientConfig) {
+      super(options);
+      clients.add(this);
+      this.once('end', () => clients.delete(this));
+      this.on('error', () => console.error('Database connection failed'));
+    }
+  }
+  const pool = new Pool({
+    Client: RequestClient,
+    connectionString: config.connectionString,
+    max: options.max,
+    connectionTimeoutMillis: options.connect_timeout * 1000,
+    idleTimeoutMillis: options.idle_timeout * 1000,
+    maxLifetimeSeconds: options.max_lifetime,
+    ...(config.queryTimeout !== undefined ? { query_timeout: config.queryTimeout * 1000 } : {}),
+    application_name: options.application_name,
+    ...('connection' in options ? { statement_timeout: options.connection.statement_timeout } : {}),
+    ssl: config.hyperdrive ? false : options.ssl === 'require' ? true : options.ssl,
+  });
+  pool.on('error', () => console.error('Database connection failed'));
+  let closing: Promise<void> | undefined;
+  return Object.assign(drizzle(pool, { schema }), {
+    $close(timeoutSeconds: number): Promise<void> {
+      if (!Number.isFinite(timeoutSeconds) || timeoutSeconds <= 0) {
+        throw new Error('Database close timeout must be a positive number');
+      }
+      if (!closing) {
+        let timer: ReturnType<typeof setTimeout>;
+        const deadline = new Promise<never>((_resolve, reject) => {
+          timer = setTimeout(() => {
+            // Includes connecting sockets; leases remain owned by Drizzle.
+            for (const client of clients) {
+              client.connection.stream.destroy(new Error('Database cleanup deadline reached'));
+            }
+            reject(new Error('Database cleanup exceeded its deadline'));
+          }, timeoutSeconds * 1000);
+        });
+        const disconnected = Promise.all([...clients].map(client =>
+          new Promise<void>(resolve => client.once('end', resolve))));
+        const drained = Promise.all([pool.end(), disconnected]).then(() => {});
+        closing = Promise.race([drained, deadline]).finally(() => clearTimeout(timer));
+      }
+      return closing;
+    },
+  });
 }
 
 export function previewConfig(config: DBConfig) {

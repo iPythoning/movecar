@@ -2,6 +2,13 @@ import withBundleAnalyzer from "@next/bundle-analyzer";
 import { withSentryConfig } from "@sentry/nextjs";
 import createNextIntlPlugin from "next-intl/plugin";
 import withPWAInit from "@ducanh2912/next-pwa";
+import createMDX from "@next/mdx";
+import remarkGfm from "remark-gfm";
+import remarkFrontmatter from "remark-frontmatter";
+import { initOpenNextCloudflareForDev } from "@opennextjs/cloudflare";
+
+if (process.env.NODE_ENV === "development") initOpenNextCloudflareForDev();
+const withMDX = createMDX({ options: { remarkPlugins: [remarkGfm, remarkFrontmatter] } });
 
 const withPWA = withPWAInit({
   dest: "public",
@@ -14,6 +21,7 @@ const withNextIntl = createNextIntlPlugin();
 
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  pageExtensions: ["js", "jsx", "ts", "tsx", "md", "mdx"],
   redirects: async () => [
     {
       source: "/dashboard",
@@ -77,6 +85,6 @@ const sentryConfig = {
 };
 
 export default withSentryConfig(
-  withPWA(withBundleAnalyzerWrapper(withNextIntl(nextConfig))),
+  withPWA(withBundleAnalyzerWrapper(withNextIntl(withMDX(nextConfig)))),
   sentryConfig
 );

@@ -14,7 +14,7 @@ import { NextResponse } from 'next/server'
  * Recheck each user's current entitlement before limiting active tags. An old
  * expired subscription must not override a renewal or lifetime purchase.
  *
- * Trigger: Vercel Cron daily at 00:00 UTC
+ * Trigger: Cloudflare Cron daily at 00:00 UTC
  *   { "path": "/api/cron/expire-check", "schedule": "0 0 * * *" }
  *
  * Or manually with header: `Authorization: Bearer ${CRON_SECRET}`

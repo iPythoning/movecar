@@ -4,11 +4,21 @@ import { DEFAULT_LOCALE } from '@/i18n/routing';
 import { PostType } from '@/lib/db/schema';
 import { PostBase, PublicPost, PublicPostWithContent } from '@/types/cms';
 import dayjs from 'dayjs';
-import fs from 'fs';
-import matter from 'gray-matter';
-import path from 'path';
+import localPostManifest from './local-posts.json';
 
-const POSTS_BATCH_SIZE = 10;
+type LocalPost = { data: Record<string, unknown>; content: string; datePaths: string[][] };
+const localPosts: Record<string, Record<string, LocalPost[]>> = localPostManifest;
+
+function localPostData(post: LocalPost): Record<string, unknown> {
+  const data = structuredClone(post.data);
+  for (const keys of post.datePaths) {
+    let target = data;
+    for (const key of keys.slice(0, -1)) target = target[key] as Record<string, unknown>;
+    const key = keys[keys.length - 1];
+    target[key] = new Date(target[key] as string);
+  }
+  return data;
+}
 
 /**
  * Maps a server post to the unified PostBase format
@@ -86,6 +96,16 @@ export function createCmsModule(postType: PostType) {
   const config = POST_CONFIGS[postType];
   const localDirectory = config.localDirectory;
 
+  function findLocalPost(slug: string, locale: string): LocalPost | undefined {
+    if (!localDirectory) return undefined;
+    const targetSlug = slug.replace(/^\//, '').replace(/\/$/, '');
+    return localPosts[postType]?.[locale]?.find(({ data }) => {
+      const localSlug = (typeof data.slug === 'string' ? data.slug : '')
+        .replace(/^\//, '').replace(/\/$/, '');
+      return localSlug === targetSlug && data.status !== 'draft';
+    });
+  }
+
   /**
    * Get a single post by slug
    * If localDirectory is configured, checks local files first, then falls back to server
@@ -94,32 +114,13 @@ export function createCmsModule(postType: PostType) {
     slug: string,
     locale: string = DEFAULT_LOCALE
   ): Promise<GetBySlugResult> {
-    // Try local filesystem first if localDirectory is configured
-    if (localDirectory) {
-      const postsDirectory = path.join(process.cwd(), localDirectory, locale);
-      if (fs.existsSync(postsDirectory)) {
-        const filenames = await fs.promises.readdir(postsDirectory);
-        for (const filename of filenames) {
-          const fullPath = path.join(postsDirectory, filename);
-          try {
-            const fileContents = await fs.promises.readFile(fullPath, 'utf8');
-            const { data, content } = matter(fileContents);
-
-            const localSlug = (data.slug || '').replace(/^\//, '').replace(/\/$/, '');
-            const targetSlug = slug.replace(/^\//, '').replace(/\/$/, '');
-
-            if (localSlug === targetSlug && data.status !== 'draft') {
-              return {
-                post: mapLocalFileToPostBase(data, content, locale),
-                error: undefined,
-                errorCode: undefined,
-              };
-            }
-          } catch (error) {
-            console.error(`Error processing local file ${filename}:`, error);
-          }
-        }
-      }
+    const localPost = findLocalPost(slug, locale);
+    if (localPost) {
+      return {
+        post: mapLocalFileToPostBase(localPostData(localPost), localPost.content, locale),
+        error: undefined,
+        errorCode: undefined,
+      };
     }
 
     // Fall back to server
@@ -147,32 +148,9 @@ export function createCmsModule(postType: PostType) {
       return { posts: [] };
     }
 
-    const postsDirectory = path.join(process.cwd(), localDirectory, locale);
-
-    if (!fs.existsSync(postsDirectory)) {
-      return { posts: [] };
-    }
-
-    let filenames = await fs.promises.readdir(postsDirectory);
-    filenames = filenames.reverse();
-
-    let allPosts: PostBase[] = [];
-
-    // Read files in batches
-    for (let i = 0; i < filenames.length; i += POSTS_BATCH_SIZE) {
-      const batchFilenames = filenames.slice(i, i + POSTS_BATCH_SIZE);
-
-      const batchPosts: PostBase[] = await Promise.all(
-        batchFilenames.map(async (filename) => {
-          const fullPath = path.join(postsDirectory, filename);
-          const fileContents = await fs.promises.readFile(fullPath, 'utf8');
-          const { data, content } = matter(fileContents);
-          return mapLocalFileToPostBase(data, content, locale);
-        })
-      );
-
-      allPosts.push(...batchPosts);
-    }
+    let allPosts = [...(localPosts[postType]?.[locale] ?? [])]
+      .reverse()
+      .map(post => mapLocalFileToPostBase(localPostData(post), post.content, locale));
 
     // Filter out non-published articles
     allPosts = allPosts.filter(post => post.status === 'published');
@@ -227,35 +205,17 @@ export function createCmsModule(postType: PostType) {
     slug: string,
     locale: string = DEFAULT_LOCALE
   ): Promise<GetMetadataResult> {
-    // Try local filesystem first if localDirectory is configured
-    if (localDirectory) {
-      const postsDirectory = path.join(process.cwd(), localDirectory, locale);
-      if (fs.existsSync(postsDirectory)) {
-        const filenames = await fs.promises.readdir(postsDirectory);
-        for (const filename of filenames) {
-          const fullPath = path.join(postsDirectory, filename);
-          try {
-            const fileContents = await fs.promises.readFile(fullPath, 'utf8');
-            const { data } = matter(fileContents);
-
-            const localSlug = (data.slug || '').replace(/^\//, '').replace(/\/$/, '');
-            const targetSlug = slug.replace(/^\//, '').replace(/\/$/, '');
-
-            if (localSlug === targetSlug && data.status !== 'draft') {
-              return {
-                metadata: {
-                  title: data.title,
-                  description: data.description || null,
-                  featuredImageUrl: data.featuredImageUrl || null,
-                  visibility: data.visibility || 'public',
-                },
-              };
-            }
-          } catch (error) {
-            console.error(`Error processing local file ${filename}:`, error);
-          }
-        }
-      }
+    const localPost = findLocalPost(slug, locale);
+    if (localPost) {
+      const post = mapLocalFileToPostBase(localPostData(localPost), localPost.content, locale);
+      return {
+        metadata: {
+          title: post.title,
+          description: post.description || null,
+          featuredImageUrl: post.featuredImageUrl || null,
+          visibility: post.visibility || 'public',
+        },
+      };
     }
 
     // Fall back to server

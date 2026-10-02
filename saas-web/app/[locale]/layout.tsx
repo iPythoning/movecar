@@ -20,7 +20,7 @@ import { constructMetadata } from "@/lib/metadata";
 import { cn } from "@/lib/utils";
 import "@/styles/globals.css";
 import "@/styles/loading.css";
-import { Analytics } from "@vercel/analytics/react";
+
 import { Metadata, Viewport } from "next";
 import { hasLocale, NextIntlClientProvider } from "next-intl";
 import {
@@ -115,7 +115,6 @@ export default async function LocaleLayout({
             <>
               {process.env.NODE_ENV === "development" ? null : (
                 <>
-                  {process.env.VERCEL_ENV ? <Analytics /> : <></>}
                   <PlausibleAnalytics />
                   <RybbitScript />
                   <UmamiScript />
@@ -133,7 +132,6 @@ export default async function LocaleLayout({
             <>
               {process.env.NODE_ENV === "development" ? null : (
                 <>
-                  {process.env.VERCEL_ENV ? <Analytics /> : <></>}
                   <PlausibleAnalytics />
                   <GoogleAnalytics />
                   <GoogleAdsense />

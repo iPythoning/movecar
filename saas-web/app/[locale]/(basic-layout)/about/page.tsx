@@ -1,36 +1,18 @@
 import MDXComponents from "@/components/mdx/MDXComponents";
+import AboutEn from "@/content/about/en.mdx";
+import AboutJa from "@/content/about/ja.mdx";
+import AboutZh from "@/content/about/zh.mdx";
 import { Locale, LOCALES } from "@/i18n/routing";
 import { constructMetadata } from "@/lib/metadata";
-import fs from "fs/promises";
 import { Metadata } from "next";
 import { getTranslations } from "next-intl/server";
-import { MDXRemote } from "next-mdx-remote-client/rsc";
-import path from "path";
-import remarkGfm from "remark-gfm";
+import { notFound } from "next/navigation";
 
-const options = {
-  parseFrontmatter: true,
-  mdxOptions: {
-    remarkPlugins: [remarkGfm],
-    rehypePlugins: [],
-  },
+const aboutContent = {
+  en: AboutEn,
+  zh: AboutZh,
+  ja: AboutJa,
 };
-
-async function getMDXContent(locale: string) {
-  const filePath = path.join(
-    process.cwd(),
-    "content",
-    "about",
-    `${locale}.mdx`
-  );
-  try {
-    const content = await fs.readFile(filePath, "utf-8");
-    return content;
-  } catch (error) {
-    console.error(`Error reading MDX file: ${error}`);
-    return "";
-  }
-}
 
 type Params = Promise<{
   locale: string;
@@ -57,15 +39,12 @@ export async function generateMetadata({
 
 export default async function Page({ params }: { params: Params }) {
   const { locale } = await params;
-  const content = await getMDXContent(locale);
+  if (!Object.hasOwn(aboutContent, locale)) notFound();
+  const Content = aboutContent[locale as keyof typeof aboutContent];
 
   return (
     <article className="container max-w-7xl mx-auto">
-      <MDXRemote
-        source={content}
-        components={MDXComponents}
-        options={options}
-      />
+      <Content components={MDXComponents} />
     </article>
   );
 }

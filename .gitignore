@@ -58,3 +58,13 @@ coverage/
 # Temporary folders
 tmp/
 temp/
+
+# Cloudflare Next build and local runtime configuration
+.open-next/
+.dev.vars*
+!.dev.vars.example
+.env.production
+
+# Generated PWA output
+saas-web/public/sw.js*
+saas-web/public/workbox-*.js*

@@ -10,7 +10,7 @@ import { NextResponse } from 'next/server'
  *
  * BotFather setWebhook example:
  *   https://api.telegram.org/bot<TELEGRAM_MOVECAR_BOT_TOKEN>/setWebhook
- *   ?url=https://movecar.autoglobalai.com/api/internal/movecar/telegram-webhook
+ *   ?url=<NEXT_PUBLIC_SITE_URL>/api/internal/movecar/telegram-webhook
  *   &secret_token=<TELEGRAM_WEBHOOK_SECRET>
  *
  * Flow:
