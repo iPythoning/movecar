@@ -152,6 +152,13 @@ jobs:
           ./node_modules/.bin/wrangler versions upload --dry-run --outdir .open-next/validated
           node scripts/prepare-cloudflare-artifact.mjs
 
+      - name: Cloudflare workerd with isolated PostgreSQL
+        env:
+          MOVECAR_LOCAL_START_TIMEOUT_MS: '120000'
+          MOVECAR_LOCAL_REQUEST_TIMEOUT_MS: '30000'
+          MOVECAR_LOCAL_SHUTDOWN_TIMEOUT_MS: '10000'
+        run: node scripts/smoke-cloudflare-local.mjs
+
       - name: Deploy verified Cloudflare artifact
         if: github.ref == 'refs/heads/main'
         env:
@@ -166,24 +173,3 @@ jobs:
         env:
           MOVECAR_RUNTIME_DIRECTORY: ${{ runner.temp }}/movecar-runtime-${{ github.run_id }}-${{ github.run_attempt }}
         run: rm -f -- "$MOVECAR_RUNTIME_DIRECTORY/secrets.json"
-
-
-  migration-source-inventory:
-    name: Read-only migration source inventory
-    runs-on: ubuntu-latest # guard: allow public repository credentials stay isolated on hosted
-    if: github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository && github.event.pull_request.head.ref == 'feat/movecar-cloudflare'
-    permissions:
-      contents: read
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 22
-      - name: Inspect MoveCar source configuration metadata
-        env:
-          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
-          MOVECAR_VERCEL_REQUEST_TIMEOUT_MS: '15000'
-          MOVECAR_VERCEL_MAX_TEAM_PAGES: '10'
-          MOVECAR_VERCEL_TEAM_PAGE_SIZE: '20'
-          MOVECAR_VERCEL_MAX_RESPONSE_BYTES: '2097152'
-        run: node saas-web/scripts/vercel-source-inventory.mjs

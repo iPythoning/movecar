@@ -138,14 +138,15 @@ export async function runVercelSourceInventory({
   write = line => process.stdout.write(`${line}\n`),
 } = {}) {
   let token;
+  let stage = "configuration";
   const emit = value => {
     const line = JSON.stringify(value);
     if (token && line.includes(token)) throw new Error();
     write(line);
   };
   try {
-    token = env.VERCEL_TOKEN;
-    if (typeof token !== 'string' || !/^[A-Za-z0-9_-]+$/.test(token)) throw new Error();
+    token = typeof env.VERCEL_TOKEN === "string" ? env.VERCEL_TOKEN.trim() : undefined;
+    if (typeof token !== 'string' || !/^[A-Za-z0-9._~+\/-]+=*$/.test(token)) throw new Error();
     const timeoutMs = positiveInteger(env, 'MOVECAR_VERCEL_REQUEST_TIMEOUT_MS');
     // Node timers cannot represent larger delays without clamping to 1 ms.
     if (timeoutMs > 2 ** 31 - 1) throw new Error();
@@ -222,7 +223,9 @@ export async function runVercelSourceInventory({
       });
     };
 
+    stage = "personal-project";
     await inspect(null);
+    stage = "team-enumeration";
     const teams = new Set();
     const cursors = new Set();
     let until;
@@ -250,9 +253,11 @@ export async function runVercelSourceInventory({
       until = next;
     }
     if (!teamEnumerationComplete) throw new Error();
+    stage = "team-projects";
     for (const teamId of teams) await inspect(teamId);
     if (!complete || candidates.size !== 1) throw new Error();
     const [project] = candidates.values();
+    stage = "environment-metadata";
     const response = await request(`/v10/projects/${project.id}/env`, {
       decrypt: 'false',
       ...(project.teamId === null ? {} : { teamId: project.teamId }),
@@ -266,7 +271,7 @@ export async function runVercelSourceInventory({
     return 0;
   } catch {
     // Do not surface exception strings: fetch/JSON failures can contain credentials.
-    write('{"status":"failed-safe"}');
+    write(JSON.stringify({ status: "failed-safe", stage }));
     return 1;
   }
 }

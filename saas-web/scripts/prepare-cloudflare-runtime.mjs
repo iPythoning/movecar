@@ -1,6 +1,7 @@
 import { mkdirSync, readFileSync, writeFileSync, appendFileSync } from 'node:fs';
 import path from 'node:path';
 import { ENV_KEYS } from './vercel-source-inventory.mjs';
+const runtimeConfig = JSON.parse(readFileSync(new URL('../config/cloudflare-runtime.json', import.meta.url), 'utf8'));
 
 try {
   const input = process.env.MOVECAR_RUNTIME_ENV;
@@ -12,11 +13,10 @@ try {
       if (!ENV_KEYS.has(key) || typeof value !== 'string' || key === 'LOG_DIR' ||
           (key in config.vars && value !== config.vars[key])) throw new Error();
     }
-    for (const key of ['DATABASE_URL', 'BETTER_AUTH_SECRET', 'WORKER_SECRET', 'CRON_SECRET',
-      'PAIBAO_FULFILL_HMAC_SECRET', 'RESEND_API_KEY', 'ADMIN_EMAIL']) {
+    for (const key of runtimeConfig.requiredSecrets) {
       if (!values[key]?.trim()) throw new Error();
     }
-    if (values.BETTER_AUTH_SECRET.length < 32) throw new Error();
+    if (values.BETTER_AUTH_SECRET.trim().length < runtimeConfig.authSecretMinLength) throw new Error();
     const database = new URL(values.DATABASE_URL);
     if (!['postgres:', 'postgresql:'].includes(database.protocol) || !database.hostname || !database.pathname) throw new Error();
     const publicKeys = Object.keys(values).filter(key => key.startsWith('NEXT_PUBLIC_'));

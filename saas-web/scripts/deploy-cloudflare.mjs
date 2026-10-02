@@ -4,6 +4,7 @@ import { verifyArtifact } from './prepare-cloudflare-artifact.mjs';
 
 verifyArtifact();
 const config = JSON.parse(readFileSync(new URL('../wrangler.jsonc', import.meta.url), 'utf8'));
+const runtimeConfig = JSON.parse(readFileSync(new URL('../config/cloudflare-runtime.json', import.meta.url), 'utf8'));
 const origin = new URL(config.vars.NEXT_PUBLIC_SITE_URL);
 if (origin.protocol !== 'https:' || origin.username || origin.password || origin.pathname !== '/' ||
     config.routes.length !== 1 || config.routes[0].pattern !== origin.hostname || !config.routes[0].custom_domain) {
@@ -82,6 +83,13 @@ let writeStarted = false;
 try {
   if (!previous && !process.env.MOVECAR_RUNTIME_SECRETS_FILE) {
     throw new Error('Initial Cloudflare release requires a safely provisioned runtime secrets file');
+  }
+  if (previous && !process.env.MOVECAR_RUNTIME_SECRETS_FILE) {
+    const secrets = JSON.parse(wrangler(['secret', 'list']));
+    if (!Array.isArray(secrets) || runtimeConfig.requiredSecrets.some(key =>
+      !secrets.some(secret => secret.name === key && secret.type === 'secret_text'))) {
+      throw new Error('Core Cloudflare runtime secrets must be provisioned before deployment');
+    }
   }
   const args = ['deploy', '--config', '.open-next/release.json', '--no-bundle', '--tag', process.env.GITHUB_SHA, '--message', `Git release ${process.env.GITHUB_SHA}`];
   if (process.env.MOVECAR_RUNTIME_SECRETS_FILE) args.push('--secrets-file', process.env.MOVECAR_RUNTIME_SECRETS_FILE);

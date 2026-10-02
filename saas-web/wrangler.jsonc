@@ -2,6 +2,7 @@
   "$schema": "node_modules/wrangler/config-schema.json",
   "name": "movecar-saas",
   "main": "custom-worker.ts",
+  "alias": { "movecar-generated-worker": "./.open-next/worker.js" },
   "compatibility_date": "2026-10-01",
   "compatibility_flags": ["nodejs_compat", "global_fetch_strictly_public"],
   "workers_dev": true,
