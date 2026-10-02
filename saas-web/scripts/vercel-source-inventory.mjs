@@ -8,7 +8,7 @@ const TEAM_ID = /^team_[A-Za-z0-9]+$/;
 const ENV_TYPES = new Set(['encrypted', 'plain', 'secret', 'sensitive', 'system']);
 const VISIBILITIES = new Set(['config', 'secret']);
 const TARGETS = new Set(['production', 'preview', 'development']);
-const ENV_KEYS = new Set(`
+export const ENV_KEYS = new Set(`
 NEXT_PUBLIC_SITE_URL NEXT_PUBLIC_BETTER_AUTH_URL NEXT_PUBLIC_PRICING_PATH
 NEXT_PUBLIC_LOCALE_DETECTION NEXT_PUBLIC_OPTIMIZED_IMAGES NEXT_PUBLIC_LOGIN_MODE
 NEXT_PUBLIC_COOKIE_CONSENT_ENABLED NEXT_PUBLIC_USER_SOURCE_TRACKING_ENABLED
