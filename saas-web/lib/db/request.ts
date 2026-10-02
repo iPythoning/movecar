@@ -32,7 +32,7 @@ export async function withDatabaseRequest(
     if (!Number.isFinite(timeout) || timeout <= 0) {
       throw new Error('MOVECAR_DB_CLOSE_TIMEOUT_SECONDS must be a positive number');
     }
-    waitUntil(scope.database.$client.end({ timeout }));
+    waitUntil(scope.database.$close(timeout));
   };
   return storage.run(scope, async () => {
     try {

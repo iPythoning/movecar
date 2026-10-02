@@ -1,5 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
+import { createServer, type Socket } from 'node:net';
+import { createDatabase } from './config';
 import { db } from './index';
 import { getDatabaseRequestScope, withDatabaseRequest } from './request';
 
@@ -7,7 +9,7 @@ const environment = { MOVECAR_DB_CLOSE_TIMEOUT_SECONDS: '5' };
 function installClient(closes: number[]) {
   const scope = getDatabaseRequestScope();
   assert.ok(scope);
-  scope.database = { $client: { end: async ({ timeout }: { timeout: number }) => { closes.push(timeout); } } } as unknown as NonNullable<typeof scope.database>;
+  scope.database = { $close: async (timeout: number) => { closes.push(timeout); } } as unknown as NonNullable<typeof scope.database>;
   return scope;
 }
 
@@ -69,22 +71,53 @@ test('requests without database access create no database cleanup task', async (
   assert.deepEqual(cleanup, []);
 });
 
-test('database proxy preserves the callable PostgreSQL client and its connection methods', async () => {
+test('database proxy preserves the PostgreSQL pool and its connection methods', async () => {
   const closes: number[] = [];
   const cleanup: Promise<unknown>[] = [];
-  const client = Object.assign((value: string) => value, {
-    end: async ({ timeout }: { timeout: number }) => { closes.push(timeout); },
-  });
+  const client = { query: async (value: string) => value, end: async () => {} };
   const response = await withDatabaseRequest(environment, promise => cleanup.push(promise), async () => {
     const scope = getDatabaseRequestScope();
     assert.ok(scope);
-    scope.database = { $client: client } as unknown as NonNullable<typeof scope.database>;
+    scope.database = { $client: client, $close: async (timeout: number) => { closes.push(timeout); } } as unknown as NonNullable<typeof scope.database>;
     assert.equal(db.$client, client);
-    assert.equal((db.$client as unknown as typeof client)('synthetic query'), 'synthetic query');
+    assert.equal(await (db.$client as unknown as typeof client).query('synthetic query'), 'synthetic query');
     assert.equal(db.$client.end, client.end);
     return new Response(null, { status: 204 });
   });
   assert.equal(response.status, 204);
   await Promise.all(cleanup);
   assert.deepEqual(closes, [5]);
+});
+
+test('database cleanup closes a socket that is still waiting for PostgreSQL authentication', async () => {
+  const sockets = new Set<Socket>();
+  let connected!: () => void;
+  const accepted = new Promise<void>(resolve => { connected = resolve; });
+  const server = createServer(socket => {
+    sockets.add(socket);
+    socket.once('close', () => sockets.delete(socket));
+    connected();
+  });
+  await new Promise<void>(resolve => server.listen(0, '127.0.0.1', resolve));
+  const address = server.address();
+  assert.ok(address && typeof address !== 'string');
+  const database = createDatabase({
+    connectionString: `postgresql://fixture@127.0.0.1:${address.port}/fixture`,
+    maxConnections: 1, connectTimeout: 15,
+  });
+  try {
+    const query = database.$client.query('SELECT 1').then(
+      () => { throw new Error('The mock server cannot complete a query'); },
+      () => {},
+    );
+    await accepted;
+    assert.equal(database.$client.totalCount, 1);
+    await assert.rejects(database.$close(0.02), /Database cleanup exceeded its deadline/);
+    await query;
+    assert.equal(database.$client.totalCount, 0);
+    assert.equal(database.$client.ended, true);
+  } finally {
+    for (const socket of sockets) socket.destroy();
+    await new Promise<void>(resolve => server.close(() => resolve()));
+  }
 });
