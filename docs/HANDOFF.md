@@ -1,5 +1,12 @@
 # MoveCar 当前交接
 
+## 2026-10-01 · Cloudflare 迁移源配置只读诊断
+- 隔离检出 `/Users/clarkfan/_worktrees/movecar-cf-config`，分支 `feat/movecar-cf-config`；新增 `saas-web/scripts/vercel-source-inventory.mjs`，固定 Vercel API origin、MoveCar slug、GET 和 `decrypt=false`，完整枚举后仅接受唯一项目 ID。
+- `VERCEL_TOKEN` 仅由 CI 运行时 env 注入；非敏感限额必须配置 `MOVECAR_VERCEL_REQUEST_TIMEOUT_MS`、`MOVECAR_VERCEL_MAX_TEAM_PAGES`、`MOVECAR_VERCEL_TEAM_PAGE_SIZE`、`MOVECAR_VERCEL_MAX_RESPONSE_BYTES`，无代码默认。
+- 仅输出合法固定键名、production/type/visibility、响应非空布尔和投影项目 ID；异常不输出正文、URL、headers、值、长度或 hash。最新 [Vercel 分类](https://vercel.com/docs/environment-variables/sensitive-environment-variables) 的 `visibility` 优先，Secret/legacy Sensitive 为 write-only；响应非空不代表明文可读。
+- 验证：`node --check`、独立 code-reviewer 的 20 项合成检查通过并 APPROVE；专职 TS reviewer 因本隔离树无应用依赖而整站 typecheck 失败，未批准，主写者在有完整依赖的 canonical 树继续独立 JS 审查。
+- 真实 token/API、配置导出、GitHub/CF/Vercel 写入和生产部署均未执行；下一步由主写者完成独立 JS 审查后在受审 CI 核实旧生产配置源，迁移模式另定。
+
 - 目标：快速上线隐私挪车并在 7 天收入 100 美元；尚无真实付款证据，目标未达成。当前主写分支 `main`，PR #1 已合并，发布代码 `6beab0a919590a98dcab89867639ea0b137c9613`，需求入口 `docs/PRD.md`，历史 Obsidian 仅为副本。
 - 本机统一网关消费端：Lifetime 按 DB 价格先存 pending，再下单；明选 Stripe/Waffo 并固化 API base/环境/SKU/税类，原文 HMAC 校验 ref/网关单/金额/币种/通道/mode/实际交易及 Waffo order ID，幂等及跨单拒绝；旧单沿原快照，订阅仍 UI 禁购/服务端 409。
 - 服务端权威普通 CRUD（LWW）：付款、退款、创建/激活车辆和过期任务共用用户事务锁；退款同步停用超额车辆，旧过期订阅不误降级 Lifetime/有效续期；定价只显示 MoveCar，查单有 DB 共享冷却，默认不打印 SQL 支付会话。
