@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
+import { db } from './index';
 import { getDatabaseRequestScope, withDatabaseRequest } from './request';
 
 const environment = { MOVECAR_DB_CLOSE_TIMEOUT_SECONDS: '5' };
@@ -66,4 +67,24 @@ test('requests without database access create no database cleanup task', async (
   const response = await withDatabaseRequest(environment, promise => cleanup.push(promise), async () => new Response(null, { status: 204 }));
   assert.equal(response.status, 204);
   assert.deepEqual(cleanup, []);
+});
+
+test('database proxy preserves the callable PostgreSQL client and its connection methods', async () => {
+  const closes: number[] = [];
+  const cleanup: Promise<unknown>[] = [];
+  const client = Object.assign((value: string) => value, {
+    end: async ({ timeout }: { timeout: number }) => { closes.push(timeout); },
+  });
+  const response = await withDatabaseRequest(environment, promise => cleanup.push(promise), async () => {
+    const scope = getDatabaseRequestScope();
+    assert.ok(scope);
+    scope.database = { $client: client } as unknown as NonNullable<typeof scope.database>;
+    assert.equal(db.$client, client);
+    assert.equal((db.$client as unknown as typeof client)('synthetic query'), 'synthetic query');
+    assert.equal(db.$client.end, client.end);
+    return new Response(null, { status: 204 });
+  });
+  assert.equal(response.status, 204);
+  await Promise.all(cleanup);
+  assert.deepEqual(closes, [5]);
 });

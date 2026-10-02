@@ -1,11 +1,5 @@
 # MoveCar 当前交接
 
-## 2026-10-01 · Cloudflare 迁移源配置只读诊断
-- 隔离检出 `/Users/clarkfan/_worktrees/movecar-cf-config`，分支 `feat/movecar-cf-config`；新增 `saas-web/scripts/vercel-source-inventory.mjs`，固定 Vercel API origin、MoveCar slug、GET 和 `decrypt=false`，完整枚举后仅接受唯一项目 ID。
-- `VERCEL_TOKEN` 仅由 CI 运行时 env 注入；非敏感限额必须配置 `MOVECAR_VERCEL_REQUEST_TIMEOUT_MS`、`MOVECAR_VERCEL_MAX_TEAM_PAGES`、`MOVECAR_VERCEL_TEAM_PAGE_SIZE`、`MOVECAR_VERCEL_MAX_RESPONSE_BYTES`，无代码默认。
-- 仅输出合法固定键名、production/type/visibility、响应非空布尔和投影项目 ID；异常不输出正文、URL、headers、值、长度或 hash。最新 [Vercel 分类](https://vercel.com/docs/environment-variables/sensitive-environment-variables) 的 `visibility` 优先，Secret/legacy Sensitive 为 write-only；响应非空不代表明文可读。
-- 真实 token/API、配置导出、GitHub/CF/Vercel 写入和生产部署均未执行；下一步由主写者完成独立 JS 审查后在受审 CI 核实旧生产配置源，迁移模式另定。
-
 - 目标：快速上线隐私挪车并在 7 天收入 100 美元；尚无真实付款证据，目标未达成。当前主写分支 `feat/movecar-cloudflare`（用户要求停止 Vercel 发布，改 Git→Cloudflare），PR #1 已合并，发布代码 `6beab0a919590a98dcab89867639ea0b137c9613`，需求入口 `docs/PRD.md`，历史 Obsidian 仅为副本。
 - 本机统一网关消费端：Lifetime 按 DB 价格先存 pending，再下单；明选 Stripe/Waffo 并固化 API base/环境/SKU/税类，原文 HMAC 校验 ref/网关单/金额/币种/通道/mode/实际交易及 Waffo order ID，幂等及跨单拒绝；旧单沿原快照，订阅仍 UI 禁购/服务端 409。
 - 服务端权威普通 CRUD（LWW）：付款、退款、创建/激活车辆和过期任务共用用户事务锁；退款同步停用超额车辆，旧过期订阅不误降级 Lifetime/有效续期；定价只显示 MoveCar，查单有 DB 共享冷却，默认不打印 SQL 支付会话。
@@ -14,10 +8,8 @@
 - 网关主树 UU 不碰；四任务提交迁入最新 main 的 `/Users/clarkfan/_worktrees/paibao-gateway-recovery-current`（4c031764，pay 树同已双审 ce9a201），Draft PR #204（https://github.com/iPythoning/paibao-console/pull/204）。PAY_CI_RUNNER 已配置 hosted，run 36897402004 真实 PG 全量 107 passed/0 skip；尚未部署，发布前需两个 PAY_DELIVERY 资源配置与既有发布门禁，不加服务器。
 - 配置名称见 `saas-web/.env.example` 的 Paibao 段；凭据仅需消费方 PAY_ADMIN_TOKEN / PAIBAO_FULFILL_HMAC_SECRET，经本地安全入口配置，不读明文。未知创建结果仍需人工核查，不自动新建可收费会话。 本地合成 CRUD/PDF 200 不代表实机：PDF 仍固定英文 A4、中文问号/模板未消费；请求者回复读取、邮件激活向导、Free TG 权限一致性及设备送达待补。
 - Waffo 已合入当前本地分支，消费端不触发合成报价的主动查单；其他调用者的合成回调仍无法区分，过期 pending 需人工恢复。生产商品仅 PulseAgent，MoveCar 一次性 Lifetime 待人审，不能复用其 29 USD 月订阅。市场判断：台湾中文验证、香港小试、韩国对照（政府已有 QR 服务），非成交证明；短信尚未实现，台湾需 KYC/链接审核，Vonage/Telnyx 实机对照与成本待验。下一步取得原生产配置并完成 Cloudflare 主站发布，回验现有 Free 链路，再补 PDF/通知/回复与人审 SKU、实收税额退款；未建品、下真单或读取凭据。
-- About 改静态导入 en/zh/ja MDX 并复用原 MDXComponents；主写者待接入 `@next/mdx`、MDX 类型与 remark-gfm/remark-frontmatter 配置，构建前在 `saas-web` 执行 `node scripts/build-local-content.mjs`。
-- 子任务验证：限定 ESLint、生成器语法、diff-check 通过；6 文件原文/元数据/顺序对照、幂等生成、本地/草稿/服务器回退与分页参数合成检查通过。完整类型、MDX 构建、独立代码/TS 审查与浏览器验收由主写者整合后完成；未读取凭据、push 或部署。
-
-- Cloudflare 主站迁移：Next 16.3.8 / OpenNext 1.20.7 / Wrangler 4.146.0；保留 PostgreSQL 交互事务，请求级 DB/Auth＋流式/取消/异常释放，静态 MDX 与内容清单，CF Cron；主写仅 canonical，内容/配置子任务已精确 cherry-pick。
-- 当前验证：类型/lint、4 个请求生命周期测试、完整 Cloudflare 构建与 prebundled --no-bundle dry-run通过；独立 TS/runtime 审查两点已修（取消上下文、履约匿名仅接受401）。本地合成 PG 账号不存在，不能充作支付 PG 验收；CI隔离 PG 23 测试与 workerd/线上回验待执行。
-- 安全来源核查：只读旧平台 API helper 已独立 code 与 JS 审查及合成验证，仅输出固定合法配置名/状态；实际 token 尚未运行。原生产 DATABASE_URL/Auth/Worker/Cron/邮件配置在本机/Vault无专用项，不新建空库替代；需先安全取得同一来源。CF bundle gzip约6.5MiB，现有套餐能力待核，不自动升配。
-- 新 Git→CF workflow 只安装/构建一次，校验预打包制品 hash后直接发布，版本读回、数据库/公共页/鉴权 smoke，失败回滚并复验；首次无CF旧版时不切短链。初次需 MOVECAR_RUNTIME_ENV（安全JSON secret，名称/路径交接不含值）；付费商品仍待审，不把免费上线视为付款链路验收。
+- Cloudflare 主站迁移在 canonical `feat/movecar-cloudflare`、[Draft PR #2](https://github.com/iPythoning/movecar/pull/2)：Next 16.3.8 / OpenNext 1.20.7 / Wrangler 4.146.0；请求级 DB/Auth、静态 MDX/内容清单和 CF Cron 已整合，七项必需运行时 secret 单源检查防止使用构建占位配置。
+- CI [36963140478](https://github.com/iPythoning/movecar/actions/runs/36963140478) 类型/lint/schema 通过；真实 PG 23 项中业务断言成功但 cleanup 失败（代理 bind 丢失 callable `$client.end`），现已返回原 client；本地类型、5/5 生命周期回归及限定 lint 通过，待新 CI 真实 PG 复验。
+- 只读旧平台 API helper 已双审与合成验证，实际 GET 两次 HTTP 403；一次性诊断 job 退出常规 CF 发布链。原 production DATABASE_URL/Auth/Worker/Cron/邮件来源仍缺，本机候选归档 `.env.local` 属 nexty.dev 模板仓，未经确认不得用作 MoveCar 生产配置；已向用户请求安全文件路径/Vault名称。
+- 新 Git→CF workflow 单次安装/构建、hash 校验 prebundled 制品、隔离 PG workerd canary（重复 health、匿名 session、三语言 About HTTP及未签名401），再发布/版本读回/线上 smoke，失败回滚复验。workerd 与生产浏览器/console、Free主流程仍待验；HTTP与匿名session不是完整登录/UI验收。
+- 初次需安全配置 MOVECAR_RUNTIME_ENV；当前未合并/未发布 CF 主站，二维码 Worker 上游保留现状。CF未压缩约28.5MiB，符合2026-09-05官方free/paid统一64MiB限制；不加服务器、不自动升配。下一步新 CI 全绿＋原生产配置安全迁入后，完成主站发布及二维码切流回验；收费 SKU 仍独立待审。

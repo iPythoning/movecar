@@ -1,11 +1,15 @@
-// @ts-ignore OpenNext emits this module during the production build.
-import handler from './.open-next/worker.js';
+import handler from 'movecar-generated-worker';
 import { withDatabaseRequest } from './lib/db/request';
+import runtimeConfig from './config/cloudflare-runtime.json';
 
 type Environment = Record<string, unknown>;
 type Context = { waitUntil(promise: Promise<unknown>): void };
 
 function fetchApplication(request: Request, env: Environment, ctx: Context) {
+  if (runtimeConfig.requiredSecrets.some(key => typeof env[key] !== 'string' || !(env[key] as string).trim()) ||
+      (env.BETTER_AUTH_SECRET as string).trim().length < runtimeConfig.authSecretMinLength) {
+    return Promise.resolve(Response.json({ ok: false, error: 'service_unavailable' }, { status: 503 }));
+  }
   return withDatabaseRequest(env, promise => ctx.waitUntil(promise), () => handler.fetch(request, env, ctx));
 }
 

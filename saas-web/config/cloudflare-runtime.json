@@ -1,0 +1,7 @@
+{
+  "requiredSecrets": [
+    "DATABASE_URL", "BETTER_AUTH_SECRET", "WORKER_SECRET", "CRON_SECRET",
+    "PAIBAO_FULFILL_HMAC_SECRET", "RESEND_API_KEY", "ADMIN_EMAIL"
+  ],
+  "authSecretMinLength": 32
+}

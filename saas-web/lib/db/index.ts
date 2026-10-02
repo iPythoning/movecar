@@ -43,6 +43,8 @@ export const db: Database = new Proxy({} as Database, {
   get(_target, property) {
     const database = getDb();
     const value = Reflect.get(database, property, database);
+    // postgres.js exposes a callable client with attached connection methods.
+    if (property === '$client') return value;
     return typeof value === 'function' ? value.bind(database) : value;
   },
 });
