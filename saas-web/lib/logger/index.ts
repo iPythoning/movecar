@@ -18,7 +18,7 @@ import pino, { type Logger } from "pino";
 
 const LOG_LEVEL = (process.env.LOG_LEVEL ?? "info") as pino.Level;
 const IS_DEV = process.env.NODE_ENV === "development";
-const IS_EDGE = process.env.NEXT_RUNTIME === "edge";
+const IS_EDGE = process.env.NEXT_RUNTIME === "edge" || process.env.MOVECAR_RUNTIME === "cloudflare";
 const LOG_DIR = process.env.LOG_DIR;
 
 function buildBaseOptions(name: string): pino.LoggerOptions {

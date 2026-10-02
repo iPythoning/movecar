@@ -8,6 +8,9 @@ interface DBConfig {
   enablePrepare?: boolean;
   enableSSL?: boolean | 'require';
   debug?: boolean;
+  connectTimeout?: number;
+  idleTimeout?: number;
+  maxLifetime?: number;
 }
 
 // detect deployment platform
@@ -115,6 +118,9 @@ export function createDatabaseConfig(config: DBConfig) {
     ...(config.maxConnections && { max: config.maxConnections }),
     ...(config.enablePrepare !== undefined && { prepare: config.enablePrepare }),
     ...(config.enableSSL !== undefined && { ssl: config.enableSSL }),
+    ...(config.connectTimeout !== undefined && { connect_timeout: config.connectTimeout }),
+    ...(config.idleTimeout !== undefined && { idle_timeout: config.idleTimeout }),
+    ...(config.maxLifetime !== undefined && { max_lifetime: config.maxLifetime }),
 
     transform: {
       undefined: null,
