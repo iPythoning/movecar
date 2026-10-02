@@ -16,4 +16,6 @@
 - 已双审且经过假依赖边界验证的只读本地运行时实查：Vault CF 账号确实能管理 autoglobalai.com，指定域名无 DNS/其他 Worker 绑定，movecar-saas 尚不存在；完整 Hyperdrive 清单无 MoveCar，已登录 Supabase 清单无同名项目。此项仅为先前清单观测，不能证明原库不存在；原库已由 `.trae` 源恢复并核验。凭据仅私有运行时，输出只含状态。
 - 初次需安全配置 MOVECAR_RUNTIME_ENV；当前未合并/未发布 CF 主站，二维码 Worker 上游保留现状。CF未压缩约28.5MiB，符合2026-09-05官方free/paid统一64MiB限制；不加服务器、不自动升配。下一步新域名 CI 全绿＋安全数据库配置落实后，完成主站发布及 Free 浏览器/二维码切流回验；收费 SKU 仍独立待审。
 - 2026-10-02：官方 Supabase Root 2021 CA 核对通过，严格 Node TLS＋原站 HMAC 只读证明通过；Hyperdrive `465872eff02b43c0a5ef0bea928384c3` 已受限创建并通过 CF 原库连接校验，CA `f28282d9-8f7f-4288-a5f2-8218eeb226e9`，verify-full/cache关闭/连接软限5，未升级套餐。
-- 待发布增量：CF 官方已明确 Drizzle+Postgres.js+Hyperdrive 不支持，改 node-postgres（既有依赖）与真实binding，保留原DB结构；请求清理覆盖连接中socket、配置桥接已独立双审＋纯假边界验证后安全暂存至本机 Vault `MOVECAR_CLOUDFLARE_RUNTIME_B64` 并经私有读回核对同步 GitHub `MOVECAR_RUNTIME_ENV`（7 core＋ADMIN_NAME）；从连接中到 socket end 的 6 lifecycle 通过，完整新CI仍待执行。主站尚未合并/部署，QR旧上游不变。
+- 发布源码 `17e0f403048ed83909100f1d4b4b654b0b7b9ad3`：改 node-postgres（既有依赖）与真实 Hyperdrive binding，保留原DB结构；配置桥接双审＋假边界验证后安全暂存至本机 Vault `MOVECAR_CLOUDFLARE_RUNTIME_B64`，私有读回核对并同步 GitHub `MOVECAR_RUNTIME_ENV`（7 core＋ADMIN_NAME）。
+- [CI 36980083048](https://github.com/iPythoning/movecar/actions/runs/36980083048) 成功：类型/lint、真实 PG 23 payment/零 skip、6 lifecycle、CF build/dry-run/hash、Hyperdrive 本地 workerd 与重复 DB health/匿名 session/三语言 About/401；独立 code/TS 审查通过。
+- 当前唯一发布前阻碍：ego 空间31仍 `agentDelegatedToUser`，等待用户交回控制；不得新建空间绕过，浏览器渲染/交互/console门禁尚未完成。取得控制后验收同源码，再合并 PR #2 自动部署 `movcar.autoglobalai.com`；新主站健康后单独切 QR 上游并验证/回滚。主站未合并/部署，QR旧上游保留，收费SKU仍独立待审。
