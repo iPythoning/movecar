@@ -8,3 +8,6 @@
 - 网关主树 UU 不碰；四任务提交迁入最新 main 的 `/Users/clarkfan/_worktrees/paibao-gateway-recovery-current`（4c031764，pay 树同已双审 ce9a201），Draft PR #204（https://github.com/iPythoning/paibao-console/pull/204）。PAY_CI_RUNNER 已配置 hosted，run 36897402004 真实 PG 全量 107 passed/0 skip；尚未部署，发布前需两个 PAY_DELIVERY 资源配置与既有发布门禁，不加服务器。
 - 配置名称见 `saas-web/.env.example` 的 Paibao 段；凭据仅需消费方 PAY_ADMIN_TOKEN / PAIBAO_FULFILL_HMAC_SECRET，经本地安全入口配置，不读明文。未知创建结果仍需人工核查，不自动新建可收费会话。 本地合成 CRUD/PDF 200 不代表实机：PDF 仍固定英文 A4、中文问号/模板未消费；请求者回复读取、邮件激活向导、Free TG 权限一致性及设备送达待补。
 - Waffo 已合入当前本地分支，消费端不触发合成报价的主动查单；其他调用者的合成回调仍无法区分，过期 pending 需人工恢复。生产商品仅 PulseAgent，MoveCar 一次性 Lifetime 待人审，不能复用其 29 USD 月订阅。市场判断：台湾中文验证、香港小试、韩国对照（政府已有 QR 服务），非成交证明；短信尚未实现，台湾需 KYC/链接审核，Vonage/Telnyx 实机对照与成本待验。下一步完成人工 Vercel 验证、修复主站发布权限并回验现有 Free 链路，再补 PDF/通知/回复与人审 SKU、实收税额退款；未建品、下真单或读取凭据。
+- 2026-10-01 CF 内容适配子任务：隔离树 `/Users/clarkfan/_worktrees/movecar-cf-content`，分支 `feat/movecar-cf-content`；本地 CMS 改读构建期 `lib/cms/local-posts.json`，生成器直接读取 `POST_CONFIGS`，保留文件顺序、正文、元数据 Date、本地优先、草稿回退及服务端权限分页。
+- About 改静态导入 en/zh/ja MDX 并复用原 MDXComponents；主写者待接入 `@next/mdx`、MDX 类型与 remark-gfm/remark-frontmatter 配置，构建前在 `saas-web` 执行 `node scripts/build-local-content.mjs`。
+- 子任务验证：限定 ESLint、生成器语法、diff-check 通过；6 文件原文/元数据/顺序对照、幂等生成、本地/草稿/服务器回退与分页参数合成检查通过。完整类型、MDX 构建、独立代码/TS 审查与浏览器验收由主写者整合后完成；未读取凭据、push 或部署。

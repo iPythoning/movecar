@@ -1,0 +1,117 @@
+{
+  "blog": {
+    "en": [
+      {
+        "filename": "1.demo.mdx",
+        "data": {
+          "title": "demo",
+          "description": "it is a description",
+          "slug": "/demo",
+          "tags": "nextjs,i18n,mdx,starter,robots,sitemap",
+          "publishedAt": "2025-02-16T00:00:00.000Z",
+          "status": "draft",
+          "isPinned": false
+        },
+        "content": "\n## Introduction\n\ndemo\n\n## How to use\n\ndemo",
+        "datePaths": [
+          [
+            "publishedAt"
+          ]
+        ]
+      },
+      {
+        "filename": "how-to-make-parking-qr-code.mdx",
+        "data": {
+          "title": "How to Make a Parking QR Code That Protects Your Privacy",
+          "description": "Learn how to create a smart parking QR code for your car. Compare free vs paid options, avoid phone number exposure, and choose the best movecar solution in 2026.",
+          "slug": "how-to-make-parking-qr-code",
+          "tags": "parking qr code, move car, privacy, smart parking, movecar",
+          "publishedAt": "2026-07-16T00:00:00.000Z",
+          "status": "published",
+          "isPinned": true
+        },
+        "content": "\n# How to Make a Parking QR Code That Protects Your Privacy\n\nLeaving your phone number on the dashboard is the old way. It exposes your personal information to strangers, spammers, and anyone who walks by your car. A **parking QR code** solves this by letting people scan a code to notify you—without ever seeing your phone number.\n\nIn this guide, you'll learn how to make a parking QR code, what features matter, and why a privacy-first service like **MoveCar** is the best option in 2026.\n\n## Why Use a Parking QR Code?\n\n- **Privacy**: Your phone number stays hidden.\n- **Convenience**: Scanners don't need to install an app.\n- **Safety**: You control when and how people contact you.\n- **Location aware**: See exactly where your car is being requested.\n\n## How to Create a Parking QR Code with MoveCar\n\n### 1. Sign Up\n\nCreate a free MoveCar account at [MoveCar](/login). You can sign in with Google or a magic link.\n\n### 2. Create Your First Tag\n\nFree users get **1 vehicle tag**. Pro users get up to 10, and Lifetime users get unlimited tags.\n\n### 3. Download or Print the QR Code\n\nMoveCar generates a printable PDF with your unique QR code. Place it on your dashboard or order a premium sticker.\n\n### 4. Connect Push Channels\n\nChoose how you want to be notified:\n\n- **Bark** (iOS, high-priority alerts)\n- **FCM** (Android / web push)\n- **Telegram**\n- **Email**\n\n### 5. Done\n\nAnyone who scans your code can send you a notification instantly. You'll receive their message and location, and you can reply with your own location if needed.\n\n## Free vs Pro vs Lifetime\n\n| Plan | Tags | Notifications | Channels | Price |\n|------|------|---------------|----------|-------|\n| Free | 1 | 30/month | Bark + Email | $0 |\n| Pro Monthly | 10 | Unlimited | All channels | $4.90/mo |\n| Pro Yearly | 10 | Unlimited | All channels | $49/yr |\n| Lifetime | Unlimited | Unlimited | All channels | $29 one-time |\n\n## What to Look For in a Parking QR Code Service\n\n1. **No phone number exposure**: The scanner should never see your number.\n2. **No app required for scanners**: A browser page is best.\n3. **Multiple notification channels**: Email alone is easy to miss.\n4. **Location sharing**: Know where the request is coming from.\n5. **Spam protection**: Delay or rate limits reduce abuse.\n\n## MoveCar vs Leaving a Phone Number\n\n| Feature | Phone Number | MoveCar QR |\n|---------|--------------|------------|\n| Privacy | ❌ Exposed | ✅ Hidden |\n| Spam protection | ❌ None | ✅ Rate limits |\n| Location context | ❌ None | ✅ Attached |\n| No app for scanner | ✅ Yes | ✅ Yes |\n| Multiple channels | ❌ SMS only | ✅ Bark/FCM/Telegram/Email |\n\n## Conclusion\n\nMaking a parking QR code is simple, cheap, and much safer than writing your phone number on a piece of paper. With MoveCar, you can start for free and upgrade only when you need more vehicles or channels.\n\n[Get your free MoveCar QR code today](/login).\n",
+        "datePaths": [
+          [
+            "publishedAt"
+          ]
+        ]
+      }
+    ],
+    "ja": [
+      {
+        "filename": "1.demo.mdx",
+        "data": {
+          "title": "デモ",
+          "description": "これはデモプロジェクトの説明です",
+          "slug": "/demo",
+          "tags": "nextjs,i18n,mdx,starter,robots,sitemap",
+          "publishedAt": "2025-02-16T00:00:00.000Z",
+          "status": "draft"
+        },
+        "content": "\n## はじめに\n\nデモ\n\n## 使い方\n\nデモ",
+        "datePaths": [
+          [
+            "publishedAt"
+          ]
+        ]
+      }
+    ],
+    "zh": [
+      {
+        "filename": "1.demo.mdx",
+        "data": {
+          "title": "示例",
+          "description": "这是一个描述",
+          "slug": "/demo",
+          "tags": "nextjs,i18n,mdx,starter,robots,sitemap",
+          "publishedAt": "2025-02-16T00:00:00.000Z",
+          "status": "draft",
+          "isPinned": false
+        },
+        "content": "\n## 简介\n\n示例\n\n## 如何使用\n\n示例",
+        "datePaths": [
+          [
+            "publishedAt"
+          ]
+        ]
+      },
+      {
+        "filename": "2.demo2.mdx",
+        "data": {
+          "title": "示例2",
+          "description": "这是一个描述2",
+          "slug": "/demo2",
+          "tags": "nextjs,i18n,mdx,starter,robots,sitemap",
+          "publishedAt": "2025-02-17T00:00:00.000Z",
+          "status": "draft"
+        },
+        "content": "\n## 简介\n\n示例2\n\n## 如何使用\n\n示例2",
+        "datePaths": [
+          [
+            "publishedAt"
+          ]
+        ]
+      },
+      {
+        "filename": "挪车码方案推荐.mdx",
+        "data": {
+          "title": "挪车码方案推荐：为什么隐私优先的 QR 码是 2026 年最佳选择",
+          "description": "对比传统留电话、纸质挪车码与智能挪车二维码，推荐 MoveCar 等隐私优先方案，详解 Bark/FCM/Telegram/邮件多渠道通知、定位共享与防骚扰设计。",
+          "slug": "挪车码方案推荐",
+          "tags": "挪车码, 停车二维码, 隐私保护, Bark, 智能挪车",
+          "publishedAt": "2026-07-16T00:00:00.000Z",
+          "status": "published",
+          "isPinned": true
+        },
+        "content": "\n# 挪车码方案推荐：为什么隐私优先的 QR 码是 2026 年最佳选择\n\n被堵在车位里却找不到车主，是传统挪车方式的痛点。过去大家习惯在挡风玻璃前留一张纸条写上手机号，但这会带来三个隐患：\n\n1. **隐私泄露**：电话号码被路人、推销员、甚至恶意人员获取。\n2. **骚扰电话**：一旦号码被拍照或转卖，后续会收到大量垃圾电话。\n3. **无法判断真伪**：有人故意扫码或打电话恶作剧，车主无法区分真实挪车请求。\n\n2026 年，更好的方案是**智能挪车二维码**。扫码者无需下载 App，就能在浏览器里一键通知车主；车主则通过 Bark、FCM、Telegram 或邮件收到高优先级推送，双方手机号全程不暴露。\n\n## 常见挪车码方案对比\n\n| 方案 | 隐私性 | 扫码者门槛 | 通知渠道 | 定位共享 | 防骚扰 |\n|------|--------|------------|----------|----------|--------|\n| 手写电话号码 | ❌ 差 | ✅ 低 | 电话/SMS | ❌ 无 | ❌ 无 |\n| 普通纸质挪车码 | ⚠️ 中等 | ✅ 低 | 转接电话 | ❌ 无 | ❌ 无 |\n| 智能挪车二维码（MoveCar） | ✅ 高 | ✅ 免 App | Bark/FCM/Telegram/邮件 | ✅ 有 | ✅ 有 |\n\n## 智能挪车二维码的核心优势\n\n### 1. 双向隐私保护\n\n扫码者看不到车主手机号，车主也看不到扫码者手机号。所有沟通通过服务端中转完成。\n\n### 2. 扫码者无需安装 App\n\n用微信、系统相机或任意扫码工具扫描后，直接打开网页即可发送通知。对临时扫码的路人非常友好。\n\n### 3. 多渠道即时通知\n\nMoveCar 支持：\n\n- **Bark**：iOS 用户的高优先级推送，支持勿扰模式穿透。\n- **FCM**：Android / Web 推送。\n- **Telegram**：适合海外或习惯用 Telegram 的用户。\n- **邮件**：作为兜底渠道。\n\n### 4. 附带请求者定位\n\n如果对方允许获取位置，车主能在通知里看到车辆被请求的精确位置，判断是否为真实挪车需求。\n\n### 5. 防骚扰机制\n\n- 未提供位置时默认延迟 30 秒发送，降低恶作剧动力。\n- 单 tag 每小时最多 20 条通知，超出后限流。\n- 免费用户每月 30 条通知，Pro / 终身用户不限量。\n\n## MoveCar 定价方案\n\n| 套餐 | 车辆数 | 月通知量 | 通知渠道 | 价格 |\n|------|--------|----------|----------|------|\n| 免费版 | 1 辆 | 30 条/月 | Bark + 邮件 | ¥0 |\n| 专业版月付 | 10 辆 | 不限量 | 全渠道 | $4.90/月 |\n| 专业版年付 | 10 辆 | 不限量 | 全渠道 | $49/年 |\n| 终身买断 | 不限 | 不限量 | 全渠道 | $29 一次性 |\n\n> 所有套餐均显示 USD 结算，中国用户可走 Creem 通道。\n\n## 如何选择适合自己的方案\n\n- **偶尔停路边**：免费版足够。\n- **家庭多辆车 / 小车队**：专业版月付或年付。\n- **不想续费、长期使用**：终身买断最划算。\n\n## 总结\n\n如果你还在车窗上贴手写手机号，强烈建议换成隐私优先的智能挪车二维码。MoveCar 免费即可起步，升级灵活，且支持国际用户与国内用户双通道支付。\n\n[免费创建你的 MoveCar 挪车码](/login)。\n",
+        "datePaths": [
+          [
+            "publishedAt"
+          ]
+        ]
+      }
+    ]
+  },
+  "glossary": {}
+}
