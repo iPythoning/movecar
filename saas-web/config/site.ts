@@ -1,6 +1,8 @@
 import { SiteConfig } from "@/types/siteConfig";
 
-export const BASE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://movecar.autoglobalai.com";
+const siteUrl = process.env.NEXT_PUBLIC_SITE_URL;
+if (!siteUrl) throw new Error("NEXT_PUBLIC_SITE_URL is required");
+export const BASE_URL = siteUrl;
 
 const GITHUB_URL = ''
 const TWITTER_URL = ''
