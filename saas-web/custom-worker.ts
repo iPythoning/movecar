@@ -6,7 +6,10 @@ type Environment = Record<string, unknown>;
 type Context = { waitUntil(promise: Promise<unknown>): void };
 
 function fetchApplication(request: Request, env: Environment, ctx: Context) {
-  if (runtimeConfig.requiredSecrets.some(key => typeof env[key] !== 'string' || !(env[key] as string).trim()) ||
+  const database = env[runtimeConfig.databaseBinding];
+  if (!database || typeof database !== 'object' || !('connectionString' in database) ||
+      typeof database.connectionString !== 'string' || !database.connectionString ||
+      runtimeConfig.requiredSecrets.some(key => typeof env[key] !== 'string' || !(env[key] as string).trim()) ||
       (env.BETTER_AUTH_SECRET as string).trim().length < runtimeConfig.authSecretMinLength) {
     return Promise.resolve(Response.json({ ok: false, error: 'service_unavailable' }, { status: 503 }));
   }

@@ -36,6 +36,10 @@ try {
   const env = { ...process.env, WRANGLER_SEND_METRICS: 'false' };
   delete env.CLOUDFLARE_API_TOKEN;
   delete env.CLOUDFLARE_ACCOUNT_ID;
+  const localHyperdrive = new URL(database.href);
+  // Miniflare requires a password; the isolated PostgreSQL service uses trust auth.
+  localHyperdrive.password = 'synthetic-isolated-canary-password';
+  env[`CLOUDFLARE_HYPERDRIVE_LOCAL_CONNECTION_STRING_${runtime.databaseBinding}`] = localHyperdrive.href;
   delete env.MOVECAR_RUNTIME_ENV;
   delete env.MOVECAR_RUNTIME_SECRETS_FILE;
   child = fork(path.join(root, 'node_modules/wrangler/bin/wrangler.js'), [
