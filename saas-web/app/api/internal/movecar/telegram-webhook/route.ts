@@ -1,8 +1,9 @@
 import { db } from '@/lib/db'
 import { movecarPushTokens } from '@/lib/db/schema'
 import { getErrorMessage } from '@/lib/error-utils'
+import { resolveMovecarPlan } from '@/lib/movecar/plan'
 import { redis } from '@/lib/upstash'
-import { eq } from 'drizzle-orm'
+import { and, eq } from 'drizzle-orm'
 import { NextResponse } from 'next/server'
 
 /**
@@ -75,12 +76,24 @@ export async function POST(request: Request) {
       return NextResponse.json({ ok: false, error: 'code_expired' }, { status: 400 })
     }
 
+    const plan = await resolveMovecarPlan(userId as string)
+    if (!plan.allowedChannels.includes('telegram')) {
+      return NextResponse.json({
+        ok: true,
+        bound: false,
+        error: 'PLAN_CHANNEL_NOT_ALLOWED',
+      })
+    }
+
     // Upsert push token
     const existing = await db
       .select({ id: movecarPushTokens.id })
       .from(movecarPushTokens)
       .where(
-        eq(movecarPushTokens.tokenValue, String(chatId))
+        and(
+          eq(movecarPushTokens.channel, 'telegram'),
+          eq(movecarPushTokens.tokenValue, String(chatId))
+        )
       )
       .limit(1)
 
@@ -88,7 +101,12 @@ export async function POST(request: Request) {
       await db
         .update(movecarPushTokens)
         .set({ isEnabled: true, userId: userId as string })
-        .where(eq(movecarPushTokens.id, existing[0].id))
+        .where(
+          and(
+            eq(movecarPushTokens.id, existing[0].id),
+            eq(movecarPushTokens.channel, 'telegram')
+          )
+        )
     } else {
       await db.insert(movecarPushTokens).values({
         userId: userId as string,
