@@ -1,0 +1,8 @@
+{
+  "source": "https://github.com/notofonts/noto-cjk/blob/165c01b46ea533872e002e0785ff17e44f6d97d8/Sans/Variable/TTF/NotoSansCJKjp-VF.ttf",
+  "sourceSha256": "240c9b83bf7b386edbae39995ae7e068ed4583f484d92e4a74c34158b5f27b1a",
+  "sha256": "8149255c3dfeaae7ee03ca8788257fa74fc9359a67e2c181c138e7938fac960c",
+  "license": "SIL Open Font License 1.1; see OFL.txt",
+  "derivation": "FontTools 4.62.1: instantiateVariableFont wght=400; rename family/full/PostScript identifiers to MoveCar Print; retain original glyph coverage; align glyf records to 4 bytes before runtime short-loca subsetting",
+  "size": 21787508
+}

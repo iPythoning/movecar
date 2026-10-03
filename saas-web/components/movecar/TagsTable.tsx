@@ -7,7 +7,7 @@ import {
   QrCode as QrIcon,
 } from 'lucide-react'
 import { useRouter } from 'next/navigation'
-import { useTranslations } from 'next-intl'
+import { useLocale, useTranslations } from 'next-intl'
 import { useState, useTransition } from 'react'
 import { toast } from 'sonner'
 
@@ -47,6 +47,7 @@ interface Props {
 
 export function TagsTable({ rows }: Props) {
   const t = useTranslations('Movecar.Tags')
+  const locale = useLocale()
   const router = useRouter()
   const [pending, startTransition] = useTransition()
   const [qrTag, setQrTag] = useState<MovecarTag | null>(null)
@@ -132,7 +133,7 @@ export function TagsTable({ rows }: Props) {
                         {t('Actions.copyLink')}
                       </DropdownMenuItem>
                       <DropdownMenuItem asChild>
-                        <a href={`/api/tags/${r.id}/pdf`} target="_blank" rel="noreferrer">
+                        <a href={`/api/tags/${r.id}/pdf?locale=${encodeURIComponent(locale)}`} target="_blank" rel="noreferrer">
                           <Printer className="h-4 w-4 mr-2" />
                           {t('Actions.downloadPdf')}
                         </a>
@@ -172,6 +173,7 @@ export function TagsTable({ rows }: Props) {
 }
 
 function QrPreview({ tagId, shortCode }: { tagId: string; shortCode: string }) {
+  const locale = useLocale()
   const workerUrl =
     process.env.NEXT_PUBLIC_WORKER_URL ?? 'https://t.autoglobalai.com'
   const qrSrc = `${workerUrl.replace(/\/$/, '')}/api/qr/${shortCode}?size=512&ec=Q`
@@ -191,7 +193,7 @@ function QrPreview({ tagId, shortCode }: { tagId: string; shortCode: string }) {
           </a>
         </Button>
         <Button variant="outline" asChild>
-          <a href={`/api/tags/${tagId}/pdf`} target="_blank" rel="noreferrer">
+          <a href={`/api/tags/${tagId}/pdf?locale=${encodeURIComponent(locale)}`} target="_blank" rel="noreferrer">
             <Printer className="h-4 w-4 mr-2" />
             Print / PDF
           </a>
