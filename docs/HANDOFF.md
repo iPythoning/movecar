@@ -24,5 +24,5 @@
 - 字体 `public/fonts/MoveCarPrint-Regular.ttf`（21,787,508 bytes）来自固定 notofonts/noto-cjk `165c01b46ea533872e002e0785ff17e44f6d97d8` 的 CJK JP 可变 TrueType；FontTools 4.62.1 离线固定 Regular/改名/glyf 四字节对齐，OFL 与原/派生 hash 见 SOURCE.json，最终 SHA256 `8149255c3dfeaae7ee03ca8788257fa74fc9359a67e2c181c138e7938fac960c`；CF 仅经已有 ASSETS binding 读取。
 - `cd saas-web && npm run pdf:verify` 最终 session 49311 exit 0：Node 与实际 local workerd 各 9 份（三语×三模板），嵌入子集字体/Unicode提取/逐字形栅格可见/擦除标题缺字负向检查/150dpi 灰度 QR 解码全部通过；本地结果在 `.temp/pdf-verification/`，只证明 PDF helper+ASSETS，不覆盖真实 Next GET 鉴权下载。
 - Typecheck 66838 exit 0、定向 ESLint 4449 exit 0（0 errors/1 既有未使用 disable warning）、diff-check 通过；code/TypeScript 独立审查无未解决 CRITICAL/HIGH，先前 OTF/未对齐 TTF 的掉字产物已修正，不复用旧 18/18 渲染结论；锁文件保留既有全平台 workerd 条目。
-- 当前新增依赖尚未完成完整 OpenNext CF build/dry-run；浏览器与实体打印未验收，生产套餐/CPU 未核。local inspector 专属目标可读但 WebSocket 握手失败，无 CPU profile；请求 walltime 不证明 Free 10ms/128MB 可用，不升级套餐，相关可选实验代码不保留。
-- 下一步由 root 推送 stacked Draft PR 并完成当前源码 CF bundle 检验；原发布候选保持不动，恢复原浏览器控制及证明生产 CPU 可承受后再验收登录下载/打印/扫码，尚不能把本分支当生产交付或收入证明。
+- root 新源码 OpenNext CF build session74613 失败：本机 Data 卷 100%、约116MiB剩余，Next 编译/类型检查后写 standalone/trace 报 ENOSPC，未到CF dry-run；使用无凭据合成环境，无生产DB。local inspector 目标可读但 WebSocket 握手失败，无 CPU profile；walltime 不证明生产 Free10ms/128MB可用，不升级套餐。
+- 下一步 root 推送 Draft PR 先以 main 为 base 触发现有远端 CI；验证完成后可改为 feat/movecar-cloudflare 的 stacked review，原 PR#2不变。浏览器/实体打印与生产CPU未验；取得浏览器控制后再验登录下载/打印/扫码，不能把本分支当生产交付或收入证明。
