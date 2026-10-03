@@ -19,3 +19,10 @@
 - 发布源码 `17e0f403048ed83909100f1d4b4b654b0b7b9ad3`：改 node-postgres（既有依赖）与真实 Hyperdrive binding，保留原DB结构；配置桥接双审＋假边界验证后安全暂存至本机 Vault `MOVECAR_CLOUDFLARE_RUNTIME_B64`，私有读回核对并同步 GitHub `MOVECAR_RUNTIME_ENV`（7 core＋ADMIN_NAME）。
 - [CI 36980083048](https://github.com/iPythoning/movecar/actions/runs/36980083048) 成功：类型/lint、真实 PG 23 payment/零 skip、6 lifecycle、CF build/dry-run/hash、Hyperdrive 本地 workerd 与重复 DB health/匿名 session/三语言 About/401；独立 code/TS 审查通过。
 - 当前唯一发布前阻碍：ego 空间31仍 `agentDelegatedToUser`，等待用户交回控制；不得新建空间绕过，浏览器渲染/交互/console门禁尚未完成。取得控制后验收同源码，再合并 PR #2 自动部署 `movcar.autoglobalai.com`；新主站健康后单独切 QR 上游并验证/回滚。主站未合并/部署，QR旧上游保留，收费SKU仍独立待审。
+- 2026-10-03 PDF 独立实现：工作树 `/Users/clarkfan/_worktrees/movecar-printable-pdf`、分支 `feat/movecar-printable-pdf` 基于 `e6a5cfe`；未改 canonical CF 候选、支付、生产或浏览器空间。按 PRD P0/TASKS T1.9 消费保存的 classic/minimal/cartoon；单一配置包含布局/三语文案，下载入口携带界面语言。
+- PDF 改为 pdf-lib/fontkit 的离线字体子集嵌入，二维码继续使用原 Worker SVG 与四模块 quiet zone/目标；owner 查询与匿名 401/他人 404 保留，无电话/邮件字段，Worker origin 缺失不再回退硬编码地址。
+- 字体 `public/fonts/MoveCarPrint-Regular.ttf`（21,787,508 bytes）来自固定 notofonts/noto-cjk `165c01b46ea533872e002e0785ff17e44f6d97d8` 的 CJK JP 可变 TrueType；FontTools 4.62.1 离线固定 Regular/改名/glyf 四字节对齐，OFL 与原/派生 hash 见 SOURCE.json，最终 SHA256 `8149255c3dfeaae7ee03ca8788257fa74fc9359a67e2c181c138e7938fac960c`；CF 仅经已有 ASSETS binding 读取。
+- `cd saas-web && npm run pdf:verify` 最终 session 49311 exit 0：Node 与实际 local workerd 各 9 份（三语×三模板），嵌入子集字体/Unicode提取/逐字形栅格可见/擦除标题缺字负向检查/150dpi 灰度 QR 解码全部通过；本地结果在 `.temp/pdf-verification/`，只证明 PDF helper+ASSETS，不覆盖真实 Next GET 鉴权下载。
+- Typecheck 66838 exit 0、定向 ESLint 4449 exit 0（0 errors/1 既有未使用 disable warning）、diff-check 通过；code/TypeScript 独立审查无未解决 CRITICAL/HIGH，先前 OTF/未对齐 TTF 的掉字产物已修正，不复用旧 18/18 渲染结论；锁文件保留既有全平台 workerd 条目。
+- 当前新增依赖尚未完成完整 OpenNext CF build/dry-run；浏览器与实体打印未验收，生产套餐/CPU 未核。local inspector 专属目标可读但 WebSocket 握手失败，无 CPU profile；请求 walltime 不证明 Free 10ms/128MB 可用，不升级套餐，相关可选实验代码不保留。
+- 下一步由 root 推送 stacked Draft PR 并完成当前源码 CF bundle 检验；原发布候选保持不动，恢复原浏览器控制及证明生产 CPU 可承受后再验收登录下载/打印/扫码，尚不能把本分支当生产交付或收入证明。
