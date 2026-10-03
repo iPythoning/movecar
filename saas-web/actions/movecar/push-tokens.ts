@@ -175,6 +175,14 @@ export async function initTelegramBindingAction(): Promise<
   }
 
   try {
+    const plan = await resolveMovecarPlan(user.id)
+    if (!plan.allowedChannels.includes('telegram')) {
+      return actionResponse.forbidden(
+        'Your plan does not allow the telegram channel.',
+        'PLAN_CHANNEL_NOT_ALLOWED'
+      )
+    }
+
     const code = randomBindingCode()
     await redis.set(`movecar:tg_bind:${code}`, user.id, {
       ex: TELEGRAM_BIND_TTL_SECONDS,
@@ -215,6 +223,14 @@ export async function sendTestPushAction(
     }
     if (!row.isEnabled) {
       return actionResponse.forbidden('Enable this channel before testing it.', 'CHANNEL_DISABLED')
+    }
+
+    const plan = await resolveMovecarPlan(user.id)
+    if (!plan.allowedChannels.includes(channel)) {
+      return actionResponse.forbidden(
+        `Your plan does not allow the ${channel} channel.`,
+        'PLAN_CHANNEL_NOT_ALLOWED'
+      )
     }
 
     const workerUrl =

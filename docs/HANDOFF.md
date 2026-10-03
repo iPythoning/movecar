@@ -19,3 +19,7 @@
 - 发布源码 `17e0f403048ed83909100f1d4b4b654b0b7b9ad3`：改 node-postgres（既有依赖）与真实 Hyperdrive binding，保留原DB结构；配置桥接双审＋假边界验证后安全暂存至本机 Vault `MOVECAR_CLOUDFLARE_RUNTIME_B64`，私有读回核对并同步 GitHub `MOVECAR_RUNTIME_ENV`（7 core＋ADMIN_NAME）。
 - [CI 36980083048](https://github.com/iPythoning/movecar/actions/runs/36980083048) 成功：类型/lint、真实 PG 23 payment/零 skip、6 lifecycle、CF build/dry-run/hash、Hyperdrive 本地 workerd 与重复 DB health/匿名 session/三语言 About/401；独立 code/TS 审查通过。
 - 当前唯一发布前阻碍：ego 空间31仍 `agentDelegatedToUser`，等待用户交回控制；不得新建空间绕过，浏览器渲染/交互/console门禁尚未完成。取得控制后验收同源码，再合并 PR #2 自动部署 `movcar.autoglobalai.com`；新主站健康后单独切 QR 上游并验证/回滚。主站未合并/部署，QR旧上游保留，收费SKU仍独立待审。
+- 2026-10-03：`/Users/clarkfan/_worktrees/movecar-push-entitlements`、`fix/movecar-push-entitlements`（基于 `e6a5cfe`）修复 Free Telegram 权限一致性；发码、回调绑定、测试通知共用 `resolveMovecarPlan().allowedChannels`，原 Free/付费权益不变。
+- 回调重新检查当前套餐，降级业务拒绝 ACK 200 并标记 `bound:false`；查询失败仍日志＋500。查/改 token 均约束 Telegram 渠道，保留 action 登录/owner 过滤，不改同值其他渠道。
+- `npm run typecheck -- --incremental false`、两文件定向 ESLint 通过；真实编译模块内存 fixture 14 组＋ACK 修正后 6 组通过（含同一码发码后降级、零副作用、权限/owner、查询失败），仅合成依赖，无凭据或真实外发。
+- 未安装/构建/迁移/发布；共享既有 node_modules 只读软链。下一步 root 完成独立 code/TS 审查、推送 Draft PR 与远端 CI，取得浏览器控制后验真实配置与设备送达；本修复不证明生产通知或收入。
